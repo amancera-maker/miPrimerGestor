@@ -1,0 +1,193 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Cliente {
+  id                 String       @id @default(cuid())
+  nombre             String
+  nombreNormalizado  String
+  empresa            String?
+  rfc                String?      @unique
+  correo             String
+  telefono           String?
+  telefonoNormalizado String?
+  direccion          String?
+  notas              String?
+  activo             Boolean      @default(true)
+  /// Clave de unicidad solo para activos: = nombreNormalizado si activo, null si inactivo
+  nombreClaveActiva  String?      @unique
+  creadoEn           DateTime     @default(now())
+  actualizadoEn      DateTime     @updatedAt
+  cotizaciones       Cotizacion[]
+
+  @@index([nombreNormalizado])
+  @@index([empresa])
+  @@index([activo])
+  @@index([creadoEn])
+}
+
+model Cotizacion {
+  id            String              @id @default(cuid())
+  numero        String              @unique
+  clienteId     String
+  cliente       Cliente             @relation(fields: [clienteId], references: [id])
+  estado        EstadoCot           @default(BORRADOR)
+  fecha         DateTime
+  vencimiento   DateTime
+  subtotal      Decimal             @db.Decimal(14, 2)
+  iva           Decimal             @db.Decimal(14, 2)
+  total         Decimal             @db.Decimal(14, 2)
+  notas         String?
+  facturadaEn   DateTime?
+  creadoPorId   String?
+  creadoPorNombre String?
+  creadoEn      DateTime            @default(now())
+  actualizadoEn DateTime            @updatedAt
+  conceptos     Concepto[]
+  pagos         Pago[]
+  historial     HistorialCot[]
+  notificaciones Notificacion[]
+  tokensPublicos TokenPublico[]
+  idempotencyKeys IdempotencyKey[]
+
+  @@index([estado])
+  @@index([fecha])
+  @@index([clienteId])
+  @@index([facturadaEn])
+}
+
+model Concepto {
+  id             String     @id @default(cuid())
+  cotizacionId   String
+  cotizacion     Cotizacion @relation(fields: [cotizacionId], references: [id], onDelete: Cascade)
+  descripcion    String
+  cantidad       Int
+  precioUnitario Decimal    @db.Decimal(14, 2)
+  subtotal       Decimal    @db.Decimal(14, 2)
+  orden          Int        @default(0)
+}
+
+model Pago {
+  id             String     @id @default(cuid())
+  cotizacionId   String
+  cotizacion     Cotizacion @relation(fields: [cotizacionId], references: [id])
+  monto          Decimal    @db.Decimal(14, 2)
+  fecha          DateTime
+  metodo         MetodoPago
+  referencia     String?
+  creadoPorId    String?
+  creadoPorNombre String?
+  creadoEn       DateTime   @default(now())
+  idempotencyKey String?    @unique
+
+  @@index([cotizacionId])
+  @@index([fecha])
+}
+
+model HistorialCot {
+  id              String     @id @default(cuid())
+  cotizacionId    String
+  cotizacion      Cotizacion @relation(fields: [cotizacionId], references: [id], onDelete: Cascade)
+  estadoAnterior  EstadoCot?
+  estadoNuevo     EstadoCot
+  nota            String?
+  usuarioId       String?
+  usuarioNombre   String?
+  creadoEn        DateTime   @default(now())
+
+  @@index([cotizacionId, creadoEn])
+}
+
+model Notificacion {
+  id              String              @id @default(cuid())
+  cotizacionId    String
+  cotizacion      Cotizacion          @relation(fields: [cotizacionId], references: [id], onDelete: Cascade)
+  tipo            TipoNotificacion
+  estado          EstadoNotificacion  @default(PENDIENTE)
+  destinatario    String
+  asunto          String
+  proveedorId     String?
+  errorTecnico    String?
+  creadoEn        DateTime            @default(now())
+  actualizadoEn   DateTime            @updatedAt
+
+  @@index([cotizacionId, tipo, creadoEn])
+  @@index([destinatario, tipo, creadoEn])
+}
+
+model TokenPublico {
+  id           String     @id @default(cuid())
+  cotizacionId String
+  cotizacion   Cotizacion @relation(fields: [cotizacionId], references: [id], onDelete: Cascade)
+  tokenHash    String     @unique
+  expiraEn     DateTime
+  creadoEn     DateTime   @default(now())
+  usadoEn      DateTime?
+
+  @@index([cotizacionId])
+  @@index([expiraEn])
+}
+
+model IdempotencyKey {
+  id           String     @id @default(cuid())
+  clave        String     @unique
+  recurso      String
+  recursoId    String?
+  cotizacionId String?
+  cotizacion   Cotizacion? @relation(fields: [cotizacionId], references: [id], onDelete: SetNull)
+  respuesta    Json?
+  creadoEn     DateTime   @default(now())
+
+  @@index([creadoEn])
+}
+
+model ContadorCotizacion {
+  anio      Int @id
+  siguiente Int @default(1)
+}
+
+model ConfigDespacho {
+  id                 String  @id @default("default")
+  nombre             String  @default("Despacho GestorPyme")
+  rfc                String?
+  direccion          String?
+  telefono           String?
+  correo             String?
+  datosTransferencia String?
+  logoUrl            String?
+}
+
+enum EstadoCot {
+  BORRADOR
+  ENVIADA
+  APROBADA
+  RECHAZADA
+  FACTURADA
+  PAGADA
+}
+
+enum MetodoPago {
+  TRANSFERENCIA
+  EFECTIVO
+  CHEQUE
+  TARJETA
+}
+
+enum TipoNotificacion {
+  COTIZACION_ENVIADA
+  COTIZACION_APROBADA
+  RECORDATORIO_PAGO
+}
+
+enum EstadoNotificacion {
+  PENDIENTE
+  ENVIANDO
+  ACEPTADA_POR_PROVEEDOR
+  ENTREGADA
+  FALLIDA
+}

@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+
+# Build / SvelteKit
+.svelte-kit/
+build/
+dist/
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Test / coverage
+coverage/
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+# Prisma
+prisma/*.db
+prisma/*.db-journal
+
+# Generated / temp
+docs_pdf_extract.txt
+*.tmp
+*.temp
+
+# Local certificates
+*.pem
+*.key
