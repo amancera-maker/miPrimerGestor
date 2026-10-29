@@ -1,6 +1,5 @@
 import { redirect, error } from '@sveltejs/kit';
-import { env } from '$env/dynamic/private';
-import { isDevAuthBypassAllowed } from './env.js';
+import { getAuthorizedEmails, isDevAuthBypassAllowed } from './env.js';
 
 /**
  * @typedef {{ userId: string, email: string | null, fullName: string | null, imageUrl: string | null }} AppUser
@@ -50,7 +49,7 @@ export async function getSessionUser(locals) {
  * @param {string | null | undefined} email
  */
 export function isEmailAuthorized(email) {
-	const raw = env.AUTHORIZED_EMAILS?.trim();
+	const raw = getAuthorizedEmails();
 	if (!raw) {
 		// Sin allowlist: en bypass OK; con Clerk real se recomienda configurar
 		return true;

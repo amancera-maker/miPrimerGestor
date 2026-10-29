@@ -9,7 +9,8 @@ services:
     region: oregon
     branch: main
     autoDeploy: true
-    buildCommand: npm ci && npx prisma generate && npx prisma migrate deploy && npm run build
+    # --include=dev: NODE_ENV=production haría que npm omita vite/svelte-kit (devDependencies)
+    buildCommand: npm ci --include=dev && npx prisma generate && npx prisma migrate deploy && npm run build
     startCommand: node build/index.js
     healthCheckPath: /api/health
     envVars:

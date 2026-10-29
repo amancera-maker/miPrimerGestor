@@ -1,8 +1,11 @@
 import { redirect } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
-import { env } from '$env/dynamic/private';
-import { env as pub } from '$env/dynamic/public';
-import { isDevAuthBypassAllowed, validateProductionEnv } from '$lib/server/env.js';
+import {
+	getClerkPublishableKey,
+	getClerkSecretKey,
+	isDevAuthBypassAllowed,
+	validateProductionEnv
+} from '$lib/server/env.js';
 
 const PUBLIC_PATHS = ['/login', '/publico', '/api/health'];
 
@@ -15,8 +18,7 @@ function isPublic(pathname) {
 }
 
 const useBypass = () => isDevAuthBypassAllowed();
-const clerkConfigured = () =>
-	Boolean(pub.PUBLIC_CLERK_PUBLISHABLE_KEY && env.CLERK_SECRET_KEY);
+const clerkConfigured = () => Boolean(getClerkPublishableKey() && getClerkSecretKey());
 
 const prodCheck = validateProductionEnv();
 if (!prodCheck.ok) {

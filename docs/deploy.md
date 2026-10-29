@@ -60,7 +60,8 @@ Asegurar que `.env` no esté en el historial (`git check-ignore -v .env`).
 
 1. New → **Blueprint** → conectar repo → `render.yaml`.
 2. O Web Service manual:
-   - **Build:** `npm ci && npx prisma generate && npx prisma migrate deploy && npm run build`
+   - **Build:** `npm ci --include=dev && npx prisma generate && npx prisma migrate deploy && npm run build`  
+     (`--include=dev` es obligatorio si `NODE_ENV=production`; si no, faltan Vite/SvelteKit y falla el build.)
    - **Start:** `node build/index.js`
    - **Health:** `/api/health`
    - **Node:** 22.x
