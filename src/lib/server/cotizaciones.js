@@ -45,7 +45,7 @@ export async function generarNumeroCotizacion(anio = new Date().getUTCFullYear()
 
 /**
  * @param {unknown} input
- * @param {{ userId?: string, userName?: string, idempotencyKey?: string | null, enviar?: boolean }} meta
+ * @param {{ userId?: string, userName?: string, userEmail?: string | null, idempotencyKey?: string | null, enviar?: boolean }} meta
  */
 export async function crearCotizacion(input, meta = {}) {
 	const parsed = parseCotizacionInput(input);
@@ -65,7 +65,8 @@ export async function crearCotizacion(input, meta = {}) {
 				if (meta.enviar && cot.estado === 'BORRADOR') {
 					const enviado = await cambiarEstado(cot.id, 'ENVIADA', {
 						userId: meta.userId,
-						userName: meta.userName
+						userName: meta.userName,
+						userEmail: meta.userEmail
 					});
 					if (enviado.ok) {
 						cot = enviado.cotizacion ?? cot;
@@ -148,7 +149,8 @@ export async function crearCotizacion(input, meta = {}) {
 		if (meta.enviar) {
 			const enviado = await cambiarEstado(cotizacion.id, 'ENVIADA', {
 				userId: meta.userId,
-				userName: meta.userName
+				userName: meta.userName,
+				userEmail: meta.userEmail
 			});
 			if (!enviado.ok) {
 				return {
@@ -227,7 +229,7 @@ export async function actualizarBorrador(id, input) {
 /**
  * @param {string} id
  * @param {string} nuevoEstado
- * @param {{ userId?: string, userName?: string, motivo?: string }} meta
+ * @param {{ userId?: string, userName?: string, userEmail?: string | null, motivo?: string }} meta
  */
 export async function cambiarEstado(id, nuevoEstado, meta = {}) {
 	const cot = await prisma.cotizacion.findUnique({
@@ -284,15 +286,21 @@ export async function cambiarEstado(id, nuevoEstado, meta = {}) {
 		/** @type {string | null} */
 		let avisoCorreo = null;
 		if (nuevoEstado === 'ENVIADA') {
-			const mail = await enviarCorreoCotizacion(updated.id);
+			const mail = await enviarCorreoCotizacion(updated.id, { userEmail: meta.userEmail });
 			if (!mail.ok) {
-				avisoCorreo = 'Cotización actualizada. El correo no pudo enviarse.';
+				avisoCorreo = mail.message
+					? `Cotización actualizada. ${mail.message}`
+					: 'Cotización actualizada. El correo no pudo enviarse.';
+			} else if (mail.message) {
+				avisoCorreo = mail.message;
 			}
 		}
 		if (nuevoEstado === 'APROBADA') {
-			const mail = await enviarCorreoAprobacion(updated.id);
+			const mail = await enviarCorreoAprobacion(updated.id, { userEmail: meta.userEmail });
 			if (!mail.ok) {
-				avisoCorreo = 'Cotización actualizada. El correo no pudo enviarse.';
+				avisoCorreo = mail.message
+					? `Cotización actualizada. ${mail.message}`
+					: 'Cotización actualizada. El correo no pudo enviarse.';
 			}
 		}
 

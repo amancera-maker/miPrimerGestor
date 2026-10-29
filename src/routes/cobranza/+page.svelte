@@ -128,10 +128,23 @@
 			<p class="rounded-lg bg-[var(--color-brand-50)] p-3 text-[var(--color-muted)]">
 				Máximo un recordatorio por día al mismo cliente.
 			</p>
-			<form method="POST" action="?/enviarRecordatorio" use:enhance>
+			<form
+				method="POST"
+				action="?/enviarRecordatorio"
+				use:enhance={() => {
+					return async ({ update, result }) => {
+						await update({ invalidateAll: true });
+						if (result.type === 'success') preview = null;
+					};
+				}}
+			>
 				<input type="hidden" name="cotizacionId" value={preview.id} />
 				<button class="btn-primary w-full" type="submit">Confirmar envío</button>
 			</form>
+			<p class="text-xs text-[var(--color-muted)]">
+				Con <code>onboarding@resend.dev</code> el correo de demo llega a tu cuenta (no al email
+				ficticio del cliente).
+			</p>
 		</div>
 	{/if}
 </Modal>

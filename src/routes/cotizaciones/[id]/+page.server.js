@@ -34,6 +34,7 @@ async function actionCambiarEstado({ request, locals, params }) {
 	const result = await cambiarEstado(params.id, nuevo, {
 		userId: auth.user.userId,
 		userName: auth.user.fullName || auth.user.email || undefined,
+		userEmail: auth.user.email,
 		motivo
 	});
 	if (!result.ok) return fail(400, { error: result.message, message: result.message });
@@ -156,9 +157,14 @@ async function actionEliminarPago({ request, locals }) {
 async function actionReenviarCorreo({ locals, params }) {
 	const auth = await requireUserAction(locals);
 	if (!auth.ok) return fail(auth.status, { error: auth.message, message: auth.message });
-	const result = await enviarCorreoCotizacion(params.id);
-	if (!result.ok) return fail(400, { error: 'No se pudo enviar el correo. Intenta nuevamente.' });
-	return { success: true, message: 'Correo reenviado' };
+	const result = await enviarCorreoCotizacion(params.id, { userEmail: auth.user.email });
+	if (!result.ok) {
+		return fail(400, {
+			error: result.message || 'No se pudo enviar el correo. Intenta nuevamente.',
+			message: result.message || 'No se pudo enviar el correo. Intenta nuevamente.'
+		});
+	}
+	return { success: true, message: result.message || 'Correo reenviado' };
 }
 
 /** @type {import('./$types').Actions} */

@@ -21,10 +21,11 @@ async function actionEnviarRecordatorio({ request, locals }) {
 	const cotizacionId = String(fd.get('cotizacionId') || '');
 	const result = await enviarRecordatorioPago(cotizacionId, {
 		userId: auth.user.userId,
-		userName: auth.user.fullName || auth.user.email || undefined
+		userName: auth.user.fullName || auth.user.email || undefined,
+		userEmail: auth.user.email
 	});
 	if (!result.ok) return fail(400, { error: result.message, message: result.message });
-	return { success: true, message: 'Recordatorio enviado' };
+	return { success: true, message: result.message || 'Recordatorio enviado' };
 }
 
 /** @type {import('./$types').Actions} */

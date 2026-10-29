@@ -63,6 +63,7 @@ async function procesarGuardado({ locals }, fd, enviar) {
 	const result = await crearCotizacion(input, {
 		userId: auth.user.userId,
 		userName: auth.user.fullName || auth.user.email || undefined,
+		userEmail: auth.user.email,
 		idempotencyKey,
 		enviar
 	});
