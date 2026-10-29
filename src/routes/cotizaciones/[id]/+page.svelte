@@ -5,6 +5,7 @@
 	import Modal from '$lib/components/Modal.svelte';
 	import Toast from '$lib/components/Toast.svelte';
 	import { TRANSICIONES } from '$lib/client/estados.js';
+	import { createFormToastGate } from '$lib/client/useFormToasts.svelte.js';
 
 	/** @type {{ data: any, form: any }} */
 	let { data, form } = $props();
@@ -29,6 +30,7 @@
 	let toasts = $state([]);
 	/** @type {{ descripcion: string, cantidad: string, precioUnitario: string }[]} */
 	let conceptosEdit = $state([]);
+	const toastGate = createFormToastGate();
 
 	$effect(() => {
 		conceptosEdit = c.conceptos.map((/** @type {any} */ x) => ({
@@ -39,19 +41,21 @@
 	});
 
 	$effect(() => {
-		if (form?.success) {
-			showPago = false;
-			showReabrir = false;
-			confirmDelete = false;
-			pagoAEliminar = null;
-			editing = false;
-			pagoIdem = crypto.randomUUID();
-			const extra =
-				form.saldoPendiente != null ? ` · Pendiente: ${formatMXN(form.saldoPendiente)}` : '';
-			pushToast(form.warning ? 'info' : 'success', `${form.message || 'Listo'}${extra}`);
-		}
-		if (form?.message && !form.success && !form.fieldErrors) pushToast('error', form.message);
-		if (data.flash) pushToast('info', data.flash);
+		toastGate.consumeFlash(data.flash, (msg) => pushToast('info', msg));
+		toastGate.consumeForm(form, {
+			onSuccess: (f) => {
+				showPago = false;
+				showReabrir = false;
+				confirmDelete = false;
+				pagoAEliminar = null;
+				editing = false;
+				pagoIdem = crypto.randomUUID();
+				const extra =
+					f.saldoPendiente != null ? ` · Pendiente: ${formatMXN(f.saldoPendiente)}` : '';
+				pushToast(f.warning ? 'info' : 'success', `${f.message || 'Listo'}${extra}`);
+			},
+			onError: (f) => pushToast('error', f.message || f.error || 'Error')
+		});
 	});
 
 	const pendienteClass = $derived.by(() => {

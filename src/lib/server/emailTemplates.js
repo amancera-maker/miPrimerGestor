@@ -29,6 +29,7 @@ function escapeHtml(s) {
  *   cotizacion: { numero: string, subtotal: any, iva: any, total: any, vencimiento?: any, notas?: string | null },
  *   conceptos: { descripcion: string, cantidad: number, precioUnitario: any, subtotal: any }[],
  *   linkPublico?: string | null,
+ *   linkPdf?: string | null,
  *   despachoNombre?: string
  * }} params
  */
@@ -37,6 +38,7 @@ export function templateCotizacionEnviada({
 	cotizacion,
 	conceptos,
 	linkPublico = null,
+	linkPdf = null,
 	despachoNombre = 'Despacho'
 }) {
 	const filasConceptos = conceptos
@@ -63,10 +65,23 @@ export function templateCotizacionEnviada({
 			)}</p></div>`
 		: '';
 
-	const linkHtml = linkPublico
-		? `<p style="margin-top:24px;text-align:center;"><a href="${escapeHtml(
+	const botones = [];
+	if (linkPublico) {
+		botones.push(
+			`<a href="${escapeHtml(
 				linkPublico
-			)}" style="display:inline-block;background:#0f3d2e;color:#ffffff;padding:12px 20px;border-radius:8px;text-decoration:none;font-size:14px;">Ver cotización en línea</a></p>`
+			)}" style="display:inline-block;background:#0f3d2e;color:#ffffff;padding:12px 20px;border-radius:8px;text-decoration:none;font-size:14px;margin:4px;">Ver cotización en línea</a>`
+		);
+	}
+	if (linkPdf) {
+		botones.push(
+			`<a href="${escapeHtml(
+				linkPdf
+			)}" style="display:inline-block;background:#ffffff;color:#0f3d2e;padding:12px 20px;border-radius:8px;text-decoration:none;font-size:14px;margin:4px;border:2px solid #0f3d2e;">Descargar PDF</a>`
+		);
+	}
+	const linkHtml = botones.length
+		? `<p style="margin-top:24px;text-align:center;">${botones.join('')}</p>`
 		: '';
 
 	return `<!DOCTYPE html>

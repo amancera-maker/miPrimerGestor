@@ -7,6 +7,7 @@ export async function load({ params }) {
 	const cot = await resolverTokenPublico(params.token);
 	if (!cot) error(404, 'Enlace no válido o expirado');
 	return {
+		token: params.token,
 		cotizacion: {
 			numero: cot.numero,
 			fecha: cot.fecha,

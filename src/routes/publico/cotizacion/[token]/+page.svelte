@@ -47,5 +47,10 @@
 		{#if c.notas}
 			<p class="text-sm text-[var(--color-muted)]">{c.notas}</p>
 		{/if}
+		<div class="flex flex-wrap gap-2 pt-2">
+			<a class="btn-primary" href={`/publico/cotizacion/${data.token}/pdf`} download>
+				Descargar PDF
+			</a>
+		</div>
 	</div>
 </div>

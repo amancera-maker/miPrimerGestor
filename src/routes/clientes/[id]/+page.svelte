@@ -6,6 +6,7 @@
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import Modal from '$lib/components/Modal.svelte';
 	import Toast from '$lib/components/Toast.svelte';
+	import { createFormToastGate } from '$lib/client/useFormToasts.svelte.js';
 
 	/** @type {{ data: any, form: any }} */
 	let { data, form } = $props();
@@ -14,19 +15,20 @@
 	let saving = $state(false);
 	/** @type {any[]} */
 	let toasts = $state([]);
+	const toastGate = createFormToastGate();
 
 	$effect(() => {
-		if (form?.success) {
-			editing = false;
-			pushToast('success', form.flash || form.message || 'Listo');
-			invalidate('app:clientes');
-		}
-		if (form?.message && !form.success && !form.errors && !form.fieldErrors) {
-			pushToast('error', form.message);
-		}
-		if ((form?.errors || form?.fieldErrors) && !form?.success) {
-			editing = true;
-		}
+		toastGate.consumeForm(form, {
+			onSuccess: (f) => {
+				editing = false;
+				pushToast('success', f.flash || f.message || 'Listo');
+				invalidate('app:clientes');
+			},
+			onError: (f) => pushToast('error', f.message || f.error || 'Error'),
+			onFieldErrors: () => {
+				editing = true;
+			}
+		});
 	});
 
 	/**

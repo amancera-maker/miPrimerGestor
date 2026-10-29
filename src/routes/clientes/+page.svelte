@@ -6,6 +6,7 @@
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import Modal from '$lib/components/Modal.svelte';
 	import Toast from '$lib/components/Toast.svelte';
+	import { createFormToastGate } from '$lib/client/useFormToasts.svelte.js';
 
 	/** @type {{ data: any, form: any }} */
 	let { data, form } = $props();
@@ -50,27 +51,31 @@
 		pagina = 1;
 	});
 
+	const toastGate = createFormToastGate();
+
 	$effect(() => {
 		if (form?.values) {
 			values = { ...form.values };
 			telefonoDraft = String(form.values.telefono ?? '');
 		}
-		if (form?.success) {
-			showModal = false;
-			editing = null;
-			saving = false;
-			idem = crypto.randomUUID();
-			pushToast('success', form.flash || form.message || 'Listo');
-			invalidate('app:clientes');
-		}
-		if (form?.message && !form?.success && !form?.errors && !form?.fieldErrors) {
-			pushToast('error', form.message);
-			saving = false;
-		}
-		if ((form?.errors || form?.fieldErrors) && !form?.success) {
-			showModal = true;
-			saving = false;
-		}
+		toastGate.consumeForm(form, {
+			onSuccess: (f) => {
+				showModal = false;
+				editing = null;
+				saving = false;
+				idem = crypto.randomUUID();
+				pushToast('success', f.flash || f.message || 'Listo');
+				invalidate('app:clientes');
+			},
+			onError: (f) => {
+				pushToast('error', f.message || f.error || 'Error');
+				saving = false;
+			},
+			onFieldErrors: () => {
+				showModal = true;
+				saving = false;
+			}
+		});
 	});
 
 	/**

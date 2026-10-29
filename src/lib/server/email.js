@@ -208,6 +208,7 @@ export async function enviarCorreoCotizacion(cotizacionId, meta = {}) {
 		const token = await crearTokenPublico(cotizacionId);
 		const origin = pub.PUBLIC_ORIGIN || env.ORIGIN || 'http://localhost:5173';
 		const link = `${origin}/publico/cotizacion/${token}`;
+		const linkPdf = `${origin}/publico/cotizacion/${token}/pdf`;
 		const despacho = await getDespacho();
 
 		const html = templateCotizacionEnviada({
@@ -215,6 +216,7 @@ export async function enviarCorreoCotizacion(cotizacionId, meta = {}) {
 			cotizacion: cot,
 			conceptos: cot.conceptos,
 			linkPublico: link,
+			linkPdf,
 			despachoNombre: despacho.nombre
 		});
 
