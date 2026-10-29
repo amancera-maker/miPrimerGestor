@@ -13,25 +13,29 @@
 	<div class="fixed inset-0 z-[70] flex items-end justify-center p-3 sm:items-center sm:p-6">
 		<button
 			type="button"
-			class="absolute inset-0 bg-black/40"
+			class="absolute inset-0 bg-[rgb(6_21_16/0.48)] backdrop-blur-[3px]"
 			aria-label="Cerrar"
 			onclick={onclose}
 		></button>
 		<div
-			class="relative z-10 flex max-h-[min(90dvh,40rem)] w-full max-w-lg flex-col overflow-hidden rounded-xl bg-white shadow-xl"
+			class="relative z-10 flex max-h-[min(90dvh,40rem)] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-[var(--color-line)] bg-white shadow-[var(--shadow-lg)]"
 			role="dialog"
 			aria-modal="true"
 			aria-label={title}
 		>
-			<div class="flex items-center justify-between border-b border-[var(--color-line)] px-4 py-3">
-				<h2 class="text-lg font-semibold text-[var(--color-brand-900)]">{title}</h2>
+			<div
+				class="flex items-center justify-between border-b border-[var(--color-line)] bg-[linear-gradient(180deg,#fbfdfc,#f4f8f6)] px-4 py-3.5"
+			>
+				<h2 class="font-display text-lg font-semibold tracking-tight text-[var(--color-brand-900)]">
+					{title}
+				</h2>
 				<button type="button" class="btn-ghost min-h-10 px-2" onclick={onclose}>✕</button>
 			</div>
 			<div class="overflow-y-auto px-4 py-4">
 				{@render children()}
 			</div>
 			{#if footer}
-				<div class="border-t border-[var(--color-line)] px-4 py-3">
+				<div class="border-t border-[var(--color-line)] bg-[#fafcfb] px-4 py-3">
 					{@render footer()}
 				</div>
 			{/if}

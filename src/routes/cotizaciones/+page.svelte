@@ -20,12 +20,10 @@
 
 <div class="space-y-5">
 	<div class="flex flex-wrap items-end justify-between gap-3">
-		<div>
-			<h1 class="font-display text-3xl text-[var(--color-brand-900)]">Cotizaciones</h1>
-			<p class="mt-1 text-sm text-[var(--color-muted)]">
-				{filtradas.length} de {data.cotizaciones.length}
-			</p>
-		</div>
+		<header class="page-header">
+			<h1>Cotizaciones</h1>
+			<p>{filtradas.length} de {data.cotizaciones.length}</p>
+		</header>
 		<a class="btn-primary" href="/cotizaciones/nueva">Nueva cotización</a>
 	</div>
 

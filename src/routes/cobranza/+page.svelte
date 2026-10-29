@@ -56,15 +56,13 @@
 
 <div class="space-y-5">
 	<div class="flex flex-wrap items-end justify-between gap-3">
-		<div>
-			<h1 class="font-display text-3xl text-[var(--color-brand-900)]">Cobranza</h1>
-			<p class="mt-1 text-sm text-[var(--color-muted)]">
-				Cotizaciones APROBADAS o FACTURADAS con saldo pendiente
-			</p>
-		</div>
-		<div class="card-panel py-3">
-			<p class="text-xs uppercase text-[var(--color-muted)]">Cartera pendiente total</p>
-			<p class="text-2xl font-semibold">{formatMXN(data.cartera.carteraPendiente)} MXN</p>
+		<header class="page-header">
+			<h1>Cobranza</h1>
+			<p>Cotizaciones APROBADAS o FACTURADAS con saldo pendiente</p>
+		</header>
+		<div class="kpi-card kpi-card--pendiente min-w-[14rem] py-3">
+			<p class="kpi-label">Cartera pendiente total</p>
+			<p class="kpi-value text-[var(--color-danger)]">{formatMXN(data.cartera.carteraPendiente)}</p>
 		</div>
 	</div>
 

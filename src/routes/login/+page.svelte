@@ -216,10 +216,15 @@
 	.login-card {
 		width: 100%;
 		max-width: 26rem;
-		border: 1px solid var(--color-line);
-		background: #fff;
+		border: 1px solid rgb(211 224 217 / 0.95);
+		border-radius: 1.15rem;
+		background:
+			linear-gradient(180deg, rgb(255 255 255 / 0.96), #fff),
+			#fff;
 		padding: 2rem 1.75rem;
-		box-shadow: 0 18px 40px rgba(7, 26, 20, 0.06);
+		box-shadow:
+			0 1px 2px rgb(6 21 16 / 0.04),
+			0 18px 44px rgb(6 21 16 / 0.1);
 	}
 
 	@media (min-width: 640px) {

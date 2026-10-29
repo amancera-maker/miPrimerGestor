@@ -24,10 +24,10 @@
 
 <div class="space-y-5">
 	<div class="flex flex-wrap items-end justify-between gap-3">
-		<div>
-			<h1 class="font-display text-3xl text-[var(--color-brand-900)]">Reportes</h1>
-			<p class="mt-1 text-sm text-[var(--color-muted)]">Resumen mensual por cliente</p>
-		</div>
+		<header class="page-header">
+			<h1>Reportes</h1>
+			<p>Resumen mensual por cliente</p>
+		</header>
 		<form method="POST" action="?/csv" class="flex gap-2">
 			<input type="hidden" name="anio" value={data.anio} />
 			<input type="hidden" name="mes" value={data.mes} />

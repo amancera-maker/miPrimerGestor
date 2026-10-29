@@ -134,15 +134,15 @@
 
 <div class="space-y-5">
 	<div class="flex flex-wrap items-end justify-between gap-3">
-		<div>
-			<h1 class="font-display text-3xl text-[var(--color-brand-900)]">Clientes</h1>
-			<p class="mt-1 text-sm text-[var(--color-muted)]">
+		<header class="page-header">
+			<h1>Clientes</h1>
+			<p>
 				{clientesFiltrados.length} registro{clientesFiltrados.length === 1 ? '' : 's'}
 				{#if !data.mostrarInactivos}
 					(activos)
 				{/if}
 			</p>
-		</div>
+		</header>
 		<div class="flex flex-wrap gap-2">
 			<button type="button" class="btn-secondary" onclick={toggleInactivos}>
 				{data.mostrarInactivos ? 'Ocultar inactivos' : 'Mostrar inactivos'}

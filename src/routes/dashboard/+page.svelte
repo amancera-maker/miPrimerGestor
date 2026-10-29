@@ -58,8 +58,10 @@
 							{
 								label: 'Cobrado (MXN)',
 								data: data.ingresosPorMes.map((/** @type {any} */ x) => Number(x.total)),
-								backgroundColor: '#1a6b4a',
-								borderRadius: 6
+								backgroundColor: '#176b52',
+								hoverBackgroundColor: '#1f8a68',
+								borderRadius: 8,
+								maxBarThickness: 36
 							}
 						]
 					},
@@ -102,12 +104,14 @@
 								data: values,
 								backgroundColor: [
 									'#94a3b8',
-									'#fbbf24',
-									'#34d399',
-									'#f87171',
-									'#c4b5fd',
-									'#5eead4'
-								]
+									'#f59e0b',
+									'#10b981',
+									'#ef4444',
+									'#0e7490',
+									'#14b8a6'
+								],
+								borderWidth: 2,
+								borderColor: '#ffffff'
 							}
 						]
 					},
@@ -125,66 +129,97 @@
 </script>
 
 <div class="space-y-6">
-	<div>
-		<h1 class="font-display text-3xl text-[var(--color-brand-900)]">Dashboard</h1>
-		<p class="mt-1 text-sm text-[var(--color-muted)]">Indicadores financieros del despacho</p>
-	</div>
+	<header class="page-header">
+		<h1>Dashboard</h1>
+		<p>Indicadores financieros del despacho</p>
+	</header>
 
 	{#if data.error}
-		<div class="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">{data.error}</div>
+		<div class="rounded-xl border border-amber-200/80 bg-amber-50/90 p-4 text-sm text-amber-950 shadow-sm">
+			{data.error}
+		</div>
 	{:else}
-		<div class="grid grid-cols-1 gap-3 min-[380px]:grid-cols-2 xl:grid-cols-4">
-			<div class="card-panel min-w-0">
+		<div class="grid grid-cols-1 gap-3.5 min-[380px]:grid-cols-2 xl:grid-cols-4">
+			<div class="kpi-card kpi-card--facturado min-w-0">
 				<div class="flex items-start justify-between gap-2">
-					<p class="text-xs font-semibold tracking-wide text-[var(--color-muted)] uppercase">
-						Facturado del mes
-					</p>
-					<span class="text-lg" aria-hidden="true">📄</span>
+					<p class="kpi-label">Facturado del mes</p>
+					<span class="kpi-icon" aria-hidden="true">
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+							><path
+								d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"
+								stroke="currentColor"
+								stroke-width="1.8"
+							/><path d="M14 3v5h5M9 13h6M9 17h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></svg
+						>
+					</span>
 				</div>
-				<p class="mt-2 break-all text-xl font-semibold sm:text-2xl">{formatMXN(data.totalFacturado)}</p>
-				<p class="mt-1 text-[11px] text-[var(--color-muted)]">Solo cotizaciones marcadas FACTURADA</p>
+				<p class="kpi-value">{formatMXN(data.totalFacturado)}</p>
+				<p class="kpi-hint">Solo cotizaciones marcadas FACTURADA</p>
 			</div>
-			<div class="card-panel min-w-0">
+			<div class="kpi-card kpi-card--cobrado min-w-0">
 				<div class="flex items-start justify-between gap-2">
-					<p class="text-xs font-semibold tracking-wide text-[var(--color-muted)] uppercase">
-						Cobrado del mes
-					</p>
-					<span class="text-lg" aria-hidden="true">💵</span>
+					<p class="kpi-label">Cobrado del mes</p>
+					<span class="kpi-icon" aria-hidden="true">
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+							><path
+								d="M12 3v18M7 8.5c0-1.7 2.2-3 5-3s5 1.3 5 3-2.2 3-5 3-5 1.3-5 3 2.2 3 5 3 5-1.3 5-3"
+								stroke="currentColor"
+								stroke-width="1.8"
+								stroke-linecap="round"
+							/></svg
+						>
+					</span>
 				</div>
-				<p class="mt-2 break-all text-xl font-semibold sm:text-2xl">{formatMXN(data.totalCobrado)}</p>
+				<p class="kpi-value">{formatMXN(data.totalCobrado)}</p>
 			</div>
-			<div class="card-panel min-w-0">
+			<div class="kpi-card kpi-card--pendiente min-w-0">
 				<div class="flex items-start justify-between gap-2">
-					<p class="text-xs font-semibold tracking-wide text-[var(--color-muted)] uppercase">
-						Cartera pendiente
-					</p>
-					<span class="text-lg" aria-hidden="true">⏳</span>
+					<p class="kpi-label">Cartera pendiente</p>
+					<span class="kpi-icon" aria-hidden="true">
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+							><circle cx="12" cy="12" r="8.25" stroke="currentColor" stroke-width="1.8" /><path
+								d="M12 7.5V12l3 2"
+								stroke="currentColor"
+								stroke-width="1.8"
+								stroke-linecap="round"
+							/></svg
+						>
+					</span>
 				</div>
-				<p class="mt-2 break-all text-xl font-semibold text-red-700 sm:text-2xl">
-					{formatMXN(data.carteraPendiente)}
-				</p>
-				<p class="mt-1 text-[11px] text-[var(--color-muted)]">APROBADA / FACTURADA con saldo &gt; 0</p>
+				<p class="kpi-value text-[var(--color-danger)]">{formatMXN(data.carteraPendiente)}</p>
+				<p class="kpi-hint">APROBADA / FACTURADA con saldo &gt; 0</p>
 			</div>
-			<div class="card-panel min-w-0">
+			<div class="kpi-card kpi-card--activas min-w-0">
 				<div class="flex items-start justify-between gap-2">
-					<p class="text-xs font-semibold tracking-wide text-[var(--color-muted)] uppercase">
-						Cotizaciones activas
-					</p>
-					<span class="text-lg" aria-hidden="true">📋</span>
+					<p class="kpi-label">Cotizaciones activas</p>
+					<span class="kpi-icon" aria-hidden="true">
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+							><path
+								d="M8 6h11M8 12h11M8 18h7M5 6h.01M5 12h.01M5 18h.01"
+								stroke="currentColor"
+								stroke-width="1.8"
+								stroke-linecap="round"
+							/></svg
+						>
+					</span>
 				</div>
-				<p class="mt-2 text-xl font-semibold sm:text-2xl">{data.cotsActivas}</p>
+				<p class="kpi-value">{data.cotsActivas}</p>
 			</div>
 		</div>
 
 		<div class="grid gap-4 lg:grid-cols-2">
 			<div class="card-panel min-w-0 overflow-hidden">
-				<h2 class="mb-3 font-semibold">Ingresos cobrados (6 meses)</h2>
+				<h2 class="mb-4 text-[0.95rem] font-bold tracking-tight text-[var(--color-brand-900)]">
+					Ingresos cobrados (6 meses)
+				</h2>
 				<div class="relative h-56 w-full max-w-full sm:h-64">
 					<canvas class="max-w-full" bind:this={barsEl}></canvas>
 				</div>
 			</div>
 			<div class="card-panel min-w-0 overflow-hidden">
-				<h2 class="mb-3 font-semibold">Cotizaciones por estado</h2>
+				<h2 class="mb-4 text-[0.95rem] font-bold tracking-tight text-[var(--color-brand-900)]">
+					Cotizaciones por estado
+				</h2>
 				<div class="relative h-56 w-full max-w-full sm:h-64">
 					<canvas class="max-w-full" bind:this={donutEl}></canvas>
 				</div>
@@ -192,9 +227,9 @@
 		</div>
 
 		<div class="grid gap-4 lg:grid-cols-2">
-			<div class="card-panel p-0">
-				<div class="border-b border-[var(--color-line)] px-4 py-3">
-					<h2 class="font-semibold">Últimas cotizaciones</h2>
+			<div class="card-panel overflow-hidden p-0">
+				<div class="panel-title-bar">
+					<h2>Últimas cotizaciones</h2>
 				</div>
 				{#if data.ultimasCots.length === 0}
 					<p class="p-4 text-sm text-[var(--color-muted)]">Aún no hay cotizaciones.</p>
@@ -210,18 +245,18 @@
 									<th>Estado</th>
 								</tr>
 							</thead>
-							<tbody class="divide-y divide-[var(--color-line)]">
+							<tbody>
 								{#each data.ultimasCots as c}
 									<tr>
 										<td>
 											<a
-												class="font-medium text-[var(--color-brand-800)] hover:underline"
+												class="font-semibold text-[var(--color-brand-800)] hover:underline"
 												href={`/cotizaciones/${c.id}`}>{c.numero}</a
 											>
 										</td>
 										<td class="!whitespace-normal">{c.cliente}</td>
 										<td>{formatFecha(c.fecha)}</td>
-										<td>{formatMXN(c.total)}</td>
+										<td class="font-medium">{formatMXN(c.total)}</td>
 										<td><BadgeEstado estado={c.estado} /></td>
 									</tr>
 								{/each}
@@ -231,9 +266,9 @@
 				{/if}
 			</div>
 
-			<div class="card-panel p-0">
-				<div class="border-b border-[var(--color-line)] px-4 py-3">
-					<h2 class="font-semibold">Top clientes con pendiente</h2>
+			<div class="card-panel overflow-hidden p-0">
+				<div class="panel-title-bar">
+					<h2>Top clientes con pendiente</h2>
 				</div>
 				{#if data.topClientes.length === 0}
 					<p class="p-4 text-sm text-[var(--color-muted)]">Sin cartera pendiente.</p>
@@ -246,15 +281,15 @@
 									<th>Saldo pendiente</th>
 								</tr>
 							</thead>
-							<tbody class="divide-y divide-[var(--color-line)]">
+							<tbody>
 								{#each data.topClientes as c}
 									<tr>
 										<td>
-											<a class="font-medium hover:underline" href={`/clientes/${c.clienteId}`}
+											<a class="font-semibold hover:underline" href={`/clientes/${c.clienteId}`}
 												>{c.nombre}</a
 											>
 										</td>
-										<td class="font-semibold text-red-700">{formatMXN(c.pendiente)}</td>
+										<td class="font-bold text-[var(--color-danger)]">{formatMXN(c.pendiente)}</td>
 									</tr>
 								{/each}
 							</tbody>
