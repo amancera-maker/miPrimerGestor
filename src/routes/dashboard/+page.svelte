@@ -14,6 +14,11 @@
 	let charts = [];
 
 	onMount(async () => {
+		try {
+			sessionStorage.removeItem('gestorpyme_dash_attempt');
+		} catch {
+			/* ignore */
+		}
 		if (!data.dashboard) return;
 		const { Chart, registerables } = await import('chart.js');
 		Chart.register(...registerables);

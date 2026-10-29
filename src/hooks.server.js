@@ -3,6 +3,7 @@ import { sequence } from '@sveltejs/kit/hooks';
 import {
 	getClerkPublishableKey,
 	getClerkSecretKey,
+	getPublicOrigin,
 	isDevAuthBypassAllowed,
 	validateProductionEnv
 } from '$lib/server/env.js';
@@ -52,22 +53,31 @@ const bypassOrMissingClerk = async ({ event, resolve }) => {
 	return resolve(event);
 };
 
-/** Handler Clerk con keys leídas de process.env (Render). */
 /** @type {import('@sveltejs/kit').Handle | null} */
 let cachedClerkHandle = null;
+/** @type {string} */
+let cachedClerkKeyFingerprint = '';
 
 /** @type {import('@sveltejs/kit').Handle} */
 const clerkHandle = async (input) => {
 	if (useBypass() || !clerkConfigured()) {
 		return input.resolve(input.event);
 	}
-	if (!cachedClerkHandle) {
+
+	const publishableKey = getClerkPublishableKey();
+	const secretKey = getClerkSecretKey();
+	const origin = getPublicOrigin() || 'https://miprimergestor.onrender.com';
+	const fingerprint = `${publishableKey.slice(0, 12)}:${secretKey.slice(0, 12)}:${origin}`;
+
+	if (!cachedClerkHandle || cachedClerkKeyFingerprint !== fingerprint) {
 		try {
 			const mod = await import('svelte-clerk/server');
 			cachedClerkHandle = mod.withClerkHandler({
-				secretKey: getClerkSecretKey(),
-				publishableKey: getClerkPublishableKey()
+				secretKey,
+				publishableKey,
+				authorizedParties: [origin, 'https://miprimergestor.onrender.com']
 			});
+			cachedClerkKeyFingerprint = fingerprint;
 		} catch (e) {
 			console.error('[GestorPyme] No se pudo cargar svelte-clerk/server', e);
 			return input.resolve(input.event);
@@ -85,10 +95,12 @@ const protectAuthenticated = async ({ event, resolve }) => {
 	const auth = event.locals.auth?.() ?? { userId: null };
 	const signedIn = Boolean(auth.userId);
 
+	// No redirigir /login → /dashboard aquí: con keys de desarrollo el servidor
+	// a menudo sigue "signed-out" (dev-browser-missing) y se crea un bucle infinito.
 	if (!signedIn && !isPublic(path)) {
 		redirect(303, '/login');
 	}
-	if (signedIn && (path === '/login' || path === '/')) {
+	if (signedIn && path === '/') {
 		redirect(303, '/dashboard');
 	}
 	return resolve(event);

@@ -64,8 +64,8 @@
 									Esa cuenta no está autorizada para este despacho.
 								</p>
 							{/if}
+							<!-- Redirect (no modal): ayuda al handshake de Clerk en dominios públicos -->
 							<mod.SignInButton
-								mode="modal"
 								forceRedirectUrl="/dashboard"
 								fallbackRedirectUrl="/dashboard"
 								asChild
