@@ -1,6 +1,5 @@
 <script>
 	import { page } from '$app/stores';
-	import { goto, invalidateAll } from '$app/navigation';
 	import PostLoginRedirect from '$lib/components/PostLoginRedirect.svelte';
 
 	/** @type {{ data: { authMode: string, user: { email: string | null } | null } }} */
@@ -8,10 +7,7 @@
 
 	$effect(() => {
 		if (!data.user) return;
-		(async () => {
-			await invalidateAll();
-			await goto('/dashboard', { replaceState: true });
-		})();
+		window.location.assign('/dashboard');
 	});
 
 	const unauthorized = $derived($page.url.searchParams.get('error') === 'unauthorized');

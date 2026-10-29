@@ -52,6 +52,30 @@ const bypassOrMissingClerk = async ({ event, resolve }) => {
 	return resolve(event);
 };
 
+/** Handler Clerk con keys leídas de process.env (Render). */
+/** @type {import('@sveltejs/kit').Handle | null} */
+let cachedClerkHandle = null;
+
+/** @type {import('@sveltejs/kit').Handle} */
+const clerkHandle = async (input) => {
+	if (useBypass() || !clerkConfigured()) {
+		return input.resolve(input.event);
+	}
+	if (!cachedClerkHandle) {
+		try {
+			const mod = await import('svelte-clerk/server');
+			cachedClerkHandle = mod.withClerkHandler({
+				secretKey: getClerkSecretKey(),
+				publishableKey: getClerkPublishableKey()
+			});
+		} catch (e) {
+			console.error('[GestorPyme] No se pudo cargar svelte-clerk/server', e);
+			return input.resolve(input.event);
+		}
+	}
+	return cachedClerkHandle(input);
+};
+
 /** @type {import('@sveltejs/kit').Handle} */
 const protectAuthenticated = async ({ event, resolve }) => {
 	if (useBypass() || !clerkConfigured()) {
@@ -69,17 +93,5 @@ const protectAuthenticated = async ({ event, resolve }) => {
 	}
 	return resolve(event);
 };
-
-/** @type {import('@sveltejs/kit').Handle} */
-let clerkHandle = async ({ event, resolve }) => resolve(event);
-
-if (!useBypass() && clerkConfigured()) {
-	try {
-		const mod = await import('svelte-clerk/server');
-		clerkHandle = mod.withClerkHandler();
-	} catch (e) {
-		console.error('[GestorPyme] No se pudo cargar svelte-clerk/server', e);
-	}
-}
 
 export const handle = sequence(bypassOrMissingClerk, clerkHandle, protectAuthenticated);
