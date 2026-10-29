@@ -16,6 +16,8 @@ Alcance: configuración reproducible + hardening. **Sin secretos de terceros en 
 
 **URL real de producción:** *no disponible — deploy no ejecutado.*
 
+Commits locales en `main`: `19a3218` (auditoría), `3a8d162` (prep. deploy). Push a GitHub pendiente de `gh auth login`.
+
 ## Checklist técnico ejecutado / preparado
 
 ### Proyecto
