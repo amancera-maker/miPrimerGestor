@@ -101,7 +101,7 @@ async function actionUpdate({ request, locals, params }) {
 /**
  * @param {import('@sveltejs/kit').RequestEvent} event
  */
-async function actionPago({ request, locals, params }) {
+async function actionRegistrarPago({ request, locals, params }) {
 	const auth = await requireUserAction(locals);
 	if (!auth.ok) return fail(auth.status, { error: auth.message, message: auth.message });
 	const fd = await request.formData();
@@ -123,7 +123,11 @@ async function actionPago({ request, locals, params }) {
 			pagoValues: input
 		});
 	}
-	return { success: true, message: 'Pago registrado' };
+	return {
+		success: true,
+		message: result.cotizacion?.estado === 'PAGADA' ? 'Pago registrado — cotización PAGADA' : 'Pago registrado',
+		saldoPendiente: result.saldoPendiente
+	};
 }
 
 /**
@@ -139,7 +143,11 @@ async function actionEliminarPago({ request, locals }) {
 		userName: auth.user.fullName || auth.user.email || undefined
 	});
 	if (!result.ok) return fail(400, { error: result.message, message: result.message });
-	return { success: true, message: 'Pago eliminado' };
+	return {
+		success: true,
+		message: 'Pago eliminado',
+		saldoPendiente: result.saldoPendiente
+	};
 }
 
 /**
@@ -159,7 +167,8 @@ export const actions = {
 	estado: actionCambiarEstado,
 	reabrir: actionReabrir,
 	update: actionUpdate,
-	pago: actionPago,
+	registrarPago: actionRegistrarPago,
+	pago: actionRegistrarPago,
 	eliminarPago: actionEliminarPago,
 	reenviarCorreo: actionReenviarCorreo
 };

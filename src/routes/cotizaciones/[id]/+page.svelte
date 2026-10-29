@@ -15,6 +15,9 @@
 
 	let showPago = $state(false);
 	let showReabrir = $state(false);
+	let confirmDelete = $state(false);
+	/** @type {any | null} */
+	let pagoAEliminar = $state(null);
 	let editing = $state(false);
 	let saving = $state(false);
 	let pagoIdem = $state(crypto.randomUUID());
@@ -35,13 +38,31 @@
 		if (form?.success) {
 			showPago = false;
 			showReabrir = false;
+			confirmDelete = false;
+			pagoAEliminar = null;
 			editing = false;
 			pagoIdem = crypto.randomUUID();
-			pushToast(form.warning ? 'info' : 'success', form.message);
+			const extra =
+				form.saldoPendiente != null ? ` · Pendiente: ${formatMXN(form.saldoPendiente)}` : '';
+			pushToast(form.warning ? 'info' : 'success', `${form.message || 'Listo'}${extra}`);
 		}
 		if (form?.message && !form.success && !form.fieldErrors) pushToast('error', form.message);
 		if (data.flash) pushToast('info', data.flash);
 	});
+
+	const pendienteClass = $derived.by(() => {
+		const p = Number(saldo.pendiente);
+		const t = Number(saldo.total);
+		if (!Number.isFinite(p) || p <= 0) return 'text-emerald-700';
+		if (Number.isFinite(t) && t > 0 && p / t <= 0.35) return 'text-amber-600';
+		return 'text-red-700';
+	});
+
+	/** @param {any} p */
+	function pedirEliminarPago(p) {
+		pagoAEliminar = p;
+		confirmDelete = true;
+	}
 
 	/**
 	 * @param {'success'|'error'|'info'} type
@@ -84,9 +105,18 @@
 	</div>
 
 	<div class="grid gap-3 sm:grid-cols-3">
-		<div class="card-panel"><p class="text-xs uppercase text-[var(--color-muted)]">Total</p><p class="mt-1 text-xl font-semibold">{formatMXN(saldo.total)}</p></div>
-		<div class="card-panel"><p class="text-xs uppercase text-[var(--color-muted)]">Pagado</p><p class="mt-1 text-xl font-semibold">{formatMXN(saldo.pagado)}</p></div>
-		<div class="card-panel"><p class="text-xs uppercase text-[var(--color-muted)]">Pendiente</p><p class="mt-1 text-xl font-semibold">{formatMXN(saldo.pendiente)}</p></div>
+		<div class="card-panel">
+			<p class="text-xs uppercase text-[var(--color-muted)]">Total</p>
+			<p class="mt-1 text-xl font-semibold">{formatMXN(saldo.total)}</p>
+		</div>
+		<div class="card-panel">
+			<p class="text-xs uppercase text-[var(--color-muted)]">Pagado</p>
+			<p class="mt-1 text-xl font-semibold">{formatMXN(saldo.pagado)}</p>
+		</div>
+		<div class="card-panel">
+			<p class="text-xs uppercase text-[var(--color-muted)]">Pendiente</p>
+			<p class={`mt-1 text-xl font-semibold ${pendienteClass}`}>{formatMXN(saldo.pendiente)}</p>
+		</div>
 	</div>
 
 	{#if siguientes.length || c.estado === 'RECHAZADA' || c.estado === 'ENVIADA'}
@@ -177,7 +207,12 @@
 
 	<section class="grid gap-4 lg:grid-cols-2">
 		<div class="card-panel">
-			<h2 class="mb-3 font-semibold">Pagos</h2>
+			<div class="mb-3 flex items-center justify-between gap-2">
+				<h2 class="font-semibold">Historial de pagos</h2>
+				{#if canPay}
+					<button type="button" class="btn-secondary" onclick={() => (showPago = true)}>Registrar pago</button>
+				{/if}
+			</div>
 			{#if c.pagos.length === 0}
 				<p class="text-sm text-[var(--color-muted)]">Sin pagos registrados.</p>
 			{:else}
@@ -185,28 +220,29 @@
 					{#each c.pagos as p}
 						<li class="flex items-center justify-between gap-2 py-3">
 							<div>
-								<p class="font-medium">{formatMXN(p.monto)} · {p.metodo}</p>
-								<p class="text-[var(--color-muted)]">{formatFecha(p.fecha)}{p.referencia ? ` · ${p.referencia}` : ''}</p>
+								<p class="font-medium">{formatFecha(p.fecha)} · {formatMXN(p.monto)}</p>
+								<p class="text-[var(--color-muted)]">
+									{p.metodo}{p.referencia ? ` · Ref: ${p.referencia}` : ''}
+								</p>
 							</div>
 							{#if c.estado !== 'PAGADA'}
-								<form
-									method="POST"
-									action="?/eliminarPago"
-									use:enhance={() => {
-										if (!confirm('¿Eliminar este pago? Esta acción no se puede deshacer.')) {
-											return async () => {};
-										}
-										return async ({ update }) => update();
-									}}
+								<button
+									type="button"
+									class="btn-ghost text-[var(--color-danger)]"
+									onclick={() => pedirEliminarPago(p)}>Eliminar</button
 								>
-									<input type="hidden" name="pagoId" value={p.id} />
-									<button class="btn-ghost text-[var(--color-danger)]" type="submit">Eliminar</button>
-								</form>
 							{/if}
 						</li>
 					{/each}
 				</ul>
 			{/if}
+			<div class="mt-4 space-y-1 border-t border-[var(--color-line)] pt-3 text-sm">
+				<div class="flex justify-between"><span>Total</span><span>{formatMXN(saldo.total)}</span></div>
+				<div class="flex justify-between"><span>Pagado</span><span>{formatMXN(saldo.pagado)}</span></div>
+				<div class={`flex justify-between font-semibold ${pendienteClass}`}>
+					<span>Pendiente</span><span>{formatMXN(saldo.pendiente)}</span>
+				</div>
+			</div>
 		</div>
 		<div class="card-panel">
 			<h2 class="mb-3 font-semibold">Historial</h2>
@@ -233,47 +269,90 @@
 	</section>
 </div>
 
-<Modal open={showPago} title="Registrar pago" onclose={() => (showPago = false)}>
-	<form
-		method="POST"
-		action="?/pago"
-		class="space-y-3"
-		use:enhance={() => {
-			saving = true;
-			return async ({ update }) => {
-				await update();
-				saving = false;
-			};
+{#if showPago}
+	<Modal open={showPago} title="Registrar pago" onclose={() => (showPago = false)}>
+		<form
+			method="POST"
+			action="?/registrarPago"
+			class="space-y-3"
+			use:enhance={() => {
+				saving = true;
+				return async ({ update }) => {
+					await update();
+					saving = false;
+				};
+			}}
+		>
+			<input type="hidden" name="idempotencyKey" value={pagoIdem} />
+			<p class="text-sm text-[var(--color-muted)]">
+				Saldo pendiente: <strong class={pendienteClass}>{formatMXN(saldo.pendiente)}</strong>
+			</p>
+			<div>
+				<label class="label" for="monto">Monto (MXN) *</label>
+				<input
+					class="input"
+					id="monto"
+					name="monto"
+					type="number"
+					step="0.01"
+					min="0.01"
+					required
+					inputmode="decimal"
+					value={form?.pagoValues?.monto ?? saldo.pendiente}
+				/>
+				{#if fieldErrors.monto}<p class="field-error">{fieldErrors.monto}</p>{/if}
+			</div>
+			<div>
+				<label class="label" for="fechaPago">Fecha *</label>
+				<input
+					class="input"
+					id="fechaPago"
+					name="fecha"
+					type="date"
+					required
+					value={toInputDate(new Date())}
+				/>
+				{#if fieldErrors.fecha}<p class="field-error">{fieldErrors.fecha}</p>{/if}
+			</div>
+			<div>
+				<label class="label" for="metodo">Método *</label>
+				<select class="input" id="metodo" name="metodo" required>
+					{#each ['TRANSFERENCIA', 'EFECTIVO', 'CHEQUE', 'TARJETA'] as m}
+						<option value={m}>{m}</option>
+					{/each}
+				</select>
+			</div>
+			<div>
+				<label class="label" for="referencia">Referencia</label>
+				<input class="input" id="referencia" name="referencia" />
+			</div>
+			{#if fieldErrors._form}<p class="field-error">{fieldErrors._form}</p>{/if}
+			<button class="btn-primary w-full" disabled={saving} type="submit">
+				{saving ? 'Guardando…' : 'Registrar pago'}
+			</button>
+		</form>
+	</Modal>
+{/if}
+
+{#if confirmDelete && pagoAEliminar}
+	<Modal
+		open={confirmDelete}
+		title="Eliminar pago"
+		onclose={() => {
+			confirmDelete = false;
+			pagoAEliminar = null;
 		}}
 	>
-		<input type="hidden" name="idempotencyKey" value={pagoIdem} />
-		<p class="text-sm text-[var(--color-muted)]">Saldo pendiente: <strong>{formatMXN(saldo.pendiente)}</strong></p>
-		<div>
-			<label class="label" for="monto">Monto *</label>
-			<input class="input" id="monto" name="monto" required inputmode="decimal" value={form?.pagoValues?.monto ?? saldo.pendiente} />
-			{#if fieldErrors.monto}<p class="field-error">{fieldErrors.monto}</p>{/if}
-		</div>
-		<div>
-			<label class="label" for="fechaPago">Fecha *</label>
-			<input class="input" id="fechaPago" name="fecha" type="date" required value={toInputDate(new Date())} />
-			{#if fieldErrors.fecha}<p class="field-error">{fieldErrors.fecha}</p>{/if}
-		</div>
-		<div>
-			<label class="label" for="metodo">Método *</label>
-			<select class="input" id="metodo" name="metodo" required>
-				{#each ['TRANSFERENCIA','EFECTIVO','CHEQUE','TARJETA'] as m}
-					<option value={m}>{m}</option>
-				{/each}
-			</select>
-		</div>
-		<div>
-			<label class="label" for="referencia">Referencia</label>
-			<input class="input" id="referencia" name="referencia" />
-		</div>
-		{#if fieldErrors._form}<p class="field-error">{fieldErrors._form}</p>{/if}
-		<button class="btn-primary w-full" disabled={saving} type="submit">{saving ? 'Guardando…' : 'Registrar pago'}</button>
-	</form>
-</Modal>
+		<p class="text-sm text-[var(--color-muted)]">
+			¿Eliminar el pago de <strong>{formatMXN(pagoAEliminar.monto)}</strong> del
+			{formatFecha(pagoAEliminar.fecha)}? Esta acción no se puede deshacer.
+		</p>
+		<form method="POST" action="?/eliminarPago" class="mt-4" use:enhance>
+			<input type="hidden" name="pagoId" value={pagoAEliminar.id} />
+			<button class="btn-danger w-full" type="submit">Confirmar eliminación</button>
+		</form>
+	</Modal>
+{/if}
 
 <Modal open={showReabrir} title="Reabrir como borrador" onclose={() => (showReabrir = false)}>
 	<form method="POST" action="?/reabrir" class="space-y-3" use:enhance>

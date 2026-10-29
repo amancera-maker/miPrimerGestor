@@ -118,7 +118,17 @@ export async function registrarPago(cotizacionId, input, meta = {}) {
 					where: { id: cotizacionId },
 					include: { pagos: true, cliente: true, conceptos: true }
 				});
-				return { pago, cotizacion, estado: cotizacion?.estado };
+				const saldoFinal = cotizacion
+					? saldoDeCotizacion(cotizacion, { raw: true })
+					: nuevoSaldo;
+				return {
+					pago,
+					cotizacion,
+					estado: cotizacion?.estado,
+					saldoPendiente: saldoFinal.pendiente,
+					pagado: saldoFinal.pagado,
+					total: saldoFinal.total
+				};
 			},
 			{ isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted, timeout: 15000 }
 		);
@@ -193,7 +203,20 @@ export async function eliminarPago(pagoId, meta = {}) {
 				}
 			});
 
-			return { ok: true };
+			const cotizacion = await tx.cotizacion.findUnique({
+				where: { id: pago.cotizacionId },
+				include: { pagos: true }
+			});
+			const saldo = cotizacion
+				? saldoDeCotizacion(cotizacion, { raw: true })
+				: { pendiente: '0.00', pagado: '0.00', total: toMoneyString(pago.cotizacion.total) };
+
+			return {
+				ok: true,
+				saldoPendiente: saldo.pendiente,
+				pagado: saldo.pagado,
+				total: saldo.total
+			};
 		});
 	} catch (e) {
 		logError('eliminarPago', e, { pagoId });

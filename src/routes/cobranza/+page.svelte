@@ -1,5 +1,6 @@
 <script>
 	import { enhance } from '$app/forms';
+	import { invalidate } from '$app/navigation';
 	import { formatMXN, formatFecha } from '$lib/format.js';
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import Modal from '$lib/components/Modal.svelte';
@@ -17,8 +18,11 @@
 		if (form?.success) {
 			preview = null;
 			pushToast('success', form.message);
+			invalidate('app:cobranza');
 		}
-		if (form?.message && !form.success) pushToast('error', form.message);
+		if ((form?.message || form?.error) && !form.success) {
+			pushToast('error', form.message || form.error);
+		}
 	});
 
 	/**
@@ -32,11 +36,20 @@
 	}
 
 	/**
-	 * @param {string} alerta
+	 * @param {number} dias
 	 */
-	function rowClass(alerta) {
-		if (alerta === 'roja') return 'bg-red-50';
-		if (alerta === 'amarilla') return 'bg-amber-50';
+	function rowClass(dias) {
+		if (dias > 30) return 'bg-red-50';
+		if (dias > 15) return 'bg-yellow-50';
+		return '';
+	}
+
+	/**
+	 * @param {number} dias
+	 */
+	function diasClass(dias) {
+		if (dias > 30) return 'font-semibold text-red-700';
+		if (dias > 15) return 'font-semibold text-amber-700';
 		return '';
 	}
 </script>
@@ -46,12 +59,12 @@
 		<div>
 			<h1 class="font-display text-3xl text-[var(--color-brand-900)]">Cobranza</h1>
 			<p class="mt-1 text-sm text-[var(--color-muted)]">
-				Cotizaciones aprobadas o facturadas con saldo pendiente
+				Cotizaciones APROBADAS o FACTURADAS con saldo pendiente
 			</p>
 		</div>
 		<div class="card-panel py-3">
-			<p class="text-xs uppercase text-[var(--color-muted)]">Cartera pendiente</p>
-			<p class="text-2xl font-semibold">{formatMXN(data.cartera.carteraPendiente)}</p>
+			<p class="text-xs uppercase text-[var(--color-muted)]">Cartera pendiente total</p>
+			<p class="text-2xl font-semibold">{formatMXN(data.cartera.carteraPendiente)} MXN</p>
 		</div>
 	</div>
 
@@ -64,7 +77,7 @@
 					<thead>
 						<tr>
 							<th>Cliente</th>
-							<th>Cotización</th>
+							<th>Número</th>
 							<th>Fecha</th>
 							<th>Total</th>
 							<th>Pagado</th>
@@ -75,7 +88,7 @@
 					</thead>
 					<tbody class="divide-y divide-[var(--color-line)]">
 						{#each data.cartera.items as item}
-							<tr class={rowClass(item.alerta)}>
+							<tr class={rowClass(item.dias)}>
 								<td class="!whitespace-normal font-medium">{item.clienteNombre}</td>
 								<td>
 									<a class="text-[var(--color-brand-800)] hover:underline" href={`/cotizaciones/${item.id}`}
@@ -85,20 +98,14 @@
 								<td>{formatFecha(item.fecha)}</td>
 								<td>{formatMXN(item.total)}</td>
 								<td>{formatMXN(item.pagado)}</td>
-								<td class="font-semibold">{formatMXN(item.pendiente)}</td>
+								<td class="font-semibold text-red-700">{formatMXN(item.pendiente)}</td>
 								<td>
-									<span
-										class={item.alerta === 'roja'
-											? 'font-semibold text-[var(--color-danger)]'
-											: item.alerta === 'amarilla'
-												? 'font-semibold text-[var(--color-warn)]'
-												: ''}
-									>
-										{item.dias}
-									</span>
+									<span class={diasClass(item.dias)}>{item.dias}</span>
 								</td>
 								<td>
-									<button type="button" class="btn-secondary" onclick={() => (preview = item)}>Recordatorio</button>
+									<button type="button" class="btn-secondary" onclick={() => (preview = item)}
+										>Enviar recordatorio</button
+									>
 								</td>
 							</tr>
 						{/each}
@@ -112,12 +119,15 @@
 <Modal open={Boolean(preview)} title="Enviar recordatorio" onclose={() => (preview = null)}>
 	{#if preview}
 		<div class="space-y-3 text-sm">
-			<p>Se enviará un correo a <strong>{preview.clienteNombre}</strong> por la cotización <strong>{preview.numero}</strong>.</p>
+			<p>
+				Se enviará un correo a <strong>{preview.clienteNombre}</strong> por la cotización
+				<strong>{preview.numero}</strong>.
+			</p>
 			<p>Monto pendiente: <strong>{formatMXN(preview.pendiente)}</strong></p>
 			<p class="rounded-lg bg-[var(--color-brand-50)] p-3 text-[var(--color-muted)]">
 				Máximo un recordatorio por día al mismo cliente.
 			</p>
-			<form method="POST" action="?/recordatorio" use:enhance>
+			<form method="POST" action="?/enviarRecordatorio" use:enhance>
 				<input type="hidden" name="cotizacionId" value={preview.id} />
 				<button class="btn-primary w-full" type="submit">Confirmar envío</button>
 			</form>
