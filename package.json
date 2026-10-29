@@ -33,6 +33,7 @@
 		"start": "node build/index.js"
 	},
 	"dependencies": {
+		"@clerk/backend": "^3.26.4",
 		"@prisma/client": "^6.16.2",
 		"chart.js": "^4.6.1",
 		"clsx": "^2.1.1",

@@ -1,15 +1,20 @@
 <script>
 	import { page } from '$app/stores';
-	import { goto } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
+	import PostLoginRedirect from '$lib/components/PostLoginRedirect.svelte';
 
 	/** @type {{ data: { authMode: string, user: { email: string | null } | null } }} */
 	let { data } = $props();
 
 	$effect(() => {
-		if (data.user) {
-			goto('/dashboard');
-		}
+		if (!data.user) return;
+		(async () => {
+			await invalidateAll();
+			await goto('/dashboard', { replaceState: true });
+		})();
 	});
+
+	const unauthorized = $derived($page.url.searchParams.get('error') === 'unauthorized');
 </script>
 
 <div class="login-root">
@@ -41,9 +46,28 @@
 				{#await import('svelte-clerk') then mod}
 					<div class="mt-8 flex flex-col gap-3">
 						<mod.Show when="signed-in">
-							<p class="text-sm text-[var(--color-muted)]">Sesión detectada. Redirigiendo al panel…</p>
+							{#if unauthorized}
+								<p class="text-sm text-[var(--color-danger)]" role="alert">
+									Tu cuenta de Google no está en la lista autorizada
+									(<code>AUTHORIZED_EMAILS</code>). Cierra sesión e inicia con el correo correcto.
+								</p>
+								<mod.SignOutButton redirectUrl="/login" asChild>
+									{#snippet children({ signOut })}
+										<button type="button" class="btn-secondary w-full" onclick={signOut}>
+											Cerrar sesión
+										</button>
+									{/snippet}
+								</mod.SignOutButton>
+							{:else}
+								<PostLoginRedirect />
+							{/if}
 						</mod.Show>
 						<mod.Show when="signed-out">
+							{#if unauthorized}
+								<p class="mb-2 text-sm text-[var(--color-danger)]" role="alert">
+									Esa cuenta no está autorizada para este despacho.
+								</p>
+							{/if}
 							<mod.SignInButton
 								mode="modal"
 								forceRedirectUrl="/dashboard"
@@ -67,13 +91,6 @@
 						DEV_BYPASS_AUTH=true.
 					</p>
 				</div>
-			{/if}
-
-			{#if $page.url.searchParams.get('error') === 'unauthorized'}
-				<p class="mt-4 text-sm text-[var(--color-danger)]" role="alert">
-					Tu cuenta de Google no está autorizada para este despacho. Pide que agreguen tu correo a
-					AUTHORIZED_EMAILS.
-				</p>
 			{/if}
 
 			<p class="legal">Acceso privado · Un despacho por despliegue</p>
