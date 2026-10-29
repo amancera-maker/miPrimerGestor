@@ -94,7 +94,7 @@
 			<h2 class="mb-3 font-semibold">Acciones de estado</h2>
 			<div class="flex flex-wrap gap-2">
 				{#each siguientes as est}
-					<form method="POST" action="?/estado" use:enhance>
+					<form method="POST" action="?/cambiarEstado" use:enhance>
 						<input type="hidden" name="estado" value={est} />
 						<button class="btn-primary" type="submit">Marcar {est.toLowerCase()}</button>
 					</form>

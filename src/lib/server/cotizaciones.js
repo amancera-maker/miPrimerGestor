@@ -17,6 +17,16 @@ export const TRANSICIONES = {
 };
 
 /**
+ * Preview del próximo número sin consumir el contador.
+ * @param {number} [anio]
+ */
+export async function previsualizarNumeroCotizacion(anio = new Date().getUTCFullYear()) {
+	const contador = await prisma.contadorCotizacion.findUnique({ where: { anio } });
+	const n = contador?.siguiente ?? 1;
+	return `COT-${anio}-${String(n).padStart(3, '0')}`;
+}
+
+/**
  * @param {number} [anio]
  */
 export async function generarNumeroCotizacion(anio = new Date().getUTCFullYear()) {
@@ -35,7 +45,7 @@ export async function generarNumeroCotizacion(anio = new Date().getUTCFullYear()
 
 /**
  * @param {unknown} input
- * @param {{ userId?: string, userName?: string, idempotencyKey?: string | null }} meta
+ * @param {{ userId?: string, userName?: string, idempotencyKey?: string | null, enviar?: boolean }} meta
  */
 export async function crearCotizacion(input, meta = {}) {
 	const parsed = parseCotizacionInput(input);
@@ -116,6 +126,26 @@ export async function crearCotizacion(input, meta = {}) {
 			}
 			return created;
 		});
+
+		if (meta.enviar) {
+			const enviado = await cambiarEstado(cotizacion.id, 'ENVIADA', {
+				userId: meta.userId,
+				userName: meta.userName
+			});
+			if (!enviado.ok) {
+				return {
+					ok: true,
+					cotizacion,
+					avisoCorreo: enviado.message || 'Cotización creada, pero no se pudo marcar como ENVIADA.'
+				};
+			}
+			return {
+				ok: true,
+				cotizacion: enviado.cotizacion ?? cotizacion,
+				avisoCorreo: enviado.avisoCorreo
+			};
+		}
+
 		return { ok: true, cotizacion };
 	} catch (e) {
 		logError('crearCotizacion', e);

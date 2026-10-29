@@ -132,8 +132,8 @@
 		font-weight: 600;
 	}
 	.badge-borrador {
-		background: #e0f2fe;
-		color: #075985;
+		background: #e2e8f0;
+		color: #475569;
 	}
 	.badge-enviada {
 		background: #fef3c7;
@@ -152,8 +152,8 @@
 		color: #5b21b6;
 	}
 	.badge-pagada {
-		background: #e2e8f0;
-		color: #334155;
+		background: #ccfbf1;
+		color: #0f766e;
 	}
 	.table-wrap {
 		width: 100%;
