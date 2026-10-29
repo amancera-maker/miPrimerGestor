@@ -22,6 +22,8 @@
 	let pagoAEliminar = $state(null);
 	let editing = $state(false);
 	let saving = $state(false);
+	/** @type {string | null} */
+	let estadoBusy = $state(null);
 	let pagoIdem = $state(crypto.randomUUID());
 	/** @type {any[]} */
 	let toasts = $state([]);
@@ -130,14 +132,57 @@
 			<h2 class="mb-3 font-semibold">Acciones de estado</h2>
 			<div class="flex flex-wrap gap-2">
 				{#each siguientes as est}
-					<form method="POST" action="?/cambiarEstado" use:enhance>
+					<form
+						method="POST"
+						action="?/cambiarEstado"
+						use:enhance={({ cancel }) => {
+							if (estadoBusy) {
+								cancel();
+								return;
+							}
+							estadoBusy = est;
+							return async ({ update, result }) => {
+								await update({ invalidateAll: true });
+								estadoBusy = null;
+								if (result.type === 'failure') {
+									pushToast('error', 'No se pudo cambiar el estado.');
+								}
+							};
+						}}
+					>
 						<input type="hidden" name="estado" value={est} />
-						<button class="btn-primary" type="submit">Marcar {est.toLowerCase()}</button>
+						<button class="btn-primary" type="submit" disabled={estadoBusy !== null}>
+							{#if estadoBusy === est && est === 'ENVIADA'}
+								Enviando al cliente…
+							{:else if estadoBusy === est}
+								Actualizando…
+							{:else if est === 'ENVIADA'}
+								Enviar al cliente
+							{:else}
+								Marcar {est.toLowerCase()}
+							{/if}
+						</button>
 					</form>
 				{/each}
 				{#if c.estado === 'ENVIADA'}
-					<form method="POST" action="?/reenviarCorreo" use:enhance>
-						<button class="btn-secondary" type="submit">Reenviar correo</button>
+					<form
+						method="POST"
+						action="?/reenviarCorreo"
+						use:enhance={({ cancel }) => {
+							if (estadoBusy) {
+								cancel();
+								return;
+							}
+							estadoBusy = 'reenviar';
+							return async ({ update }) => {
+								await update({ invalidateAll: true });
+								estadoBusy = null;
+							};
+						}}
+					>
+						<button class="btn-secondary" type="submit" disabled={estadoBusy !== null}>
+							{estadoBusy === 'reenviar' ? 'Reenviando…' : 'Reenviar correo'}
+						</button>
 					</form>
 				{/if}
 				{#if c.estado === 'RECHAZADA'}

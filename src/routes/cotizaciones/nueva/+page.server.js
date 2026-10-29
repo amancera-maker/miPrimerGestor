@@ -70,6 +70,7 @@ async function procesarGuardado({ locals }, fd, enviar) {
 	if (!result.ok) {
 		return fail(400, {
 			error: result.fieldErrors?._form || 'No se pudo guardar',
+			message: result.fieldErrors?._form || 'No se pudo guardar',
 			fieldErrors: result.fieldErrors,
 			values: input
 		});
@@ -83,11 +84,10 @@ async function procesarGuardado({ locals }, fd, enviar) {
 export const actions = {
 	guardar: async (event) => {
 		const fd = await event.request.formData();
-		const intent = String(fd.get('intent') || 'borrador');
-		return procesarGuardado(event, fd, intent === 'enviar');
-	},
-	default: async (event) => {
-		const fd = await event.request.formData();
 		return procesarGuardado(event, fd, false);
+	},
+	enviar: async (event) => {
+		const fd = await event.request.formData();
+		return procesarGuardado(event, fd, true);
 	}
 };

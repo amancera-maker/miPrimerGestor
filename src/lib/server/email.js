@@ -40,12 +40,18 @@ export async function sendEmail({ to, subject, html, from }) {
 		return { ok: false, error: 'RESEND_API_KEY no configurada' };
 	}
 	try {
-		const result = await mailer.send({
+		const sendPromise = mailer.send({
 			from: from || env.FROM_EMAIL || 'onboarding@resend.dev',
 			to,
 			subject,
 			html
 		});
+		const result = await Promise.race([
+			sendPromise,
+			new Promise((_, reject) =>
+				setTimeout(() => reject(new Error('Tiempo de espera agotado al enviar el correo')), 20000)
+			)
+		]);
 		if (!result.ok) {
 			console.error('[Resend] Error al enviar:', result.error);
 			return { ok: false, error: result.error };

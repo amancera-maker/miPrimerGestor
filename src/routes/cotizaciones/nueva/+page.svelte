@@ -7,13 +7,18 @@
 	let { data, form } = $props();
 
 	let clienteId = $state('');
-	let saving = $state(false);
+	/** @type {'borrador' | 'enviar' | null} */
+	let saving = $state(null);
+	let clientError = $state('');
 	let idem = $state(crypto.randomUUID());
 	/** @type {{ descripcion: string, cantidad: string, precio: string }[]} */
 	let conceptos = $state([{ descripcion: '', cantidad: '1', precio: '' }]);
 
 	$effect(() => {
-		clienteId = data.initialCliente?.id ?? clienteId;
+		if (data.initialCliente?.id) clienteId = data.initialCliente.id;
+	});
+
+	$effect(() => {
 		if (form?.values?.conceptos) {
 			conceptos = form.values.conceptos.map((/** @type {any} */ c) => ({
 				descripcion: c.descripcion ?? '',
@@ -21,6 +26,7 @@
 				precio: String(c.precioUnitario ?? c.precio ?? '')
 			}));
 		}
+		if (form?.values?.clienteId) clienteId = String(form.values.clienteId);
 	});
 
 	const fieldErrors = $derived(form?.fieldErrors ?? {});
@@ -51,35 +57,61 @@
 		if (conceptos.length <= 1) return;
 		conceptos = conceptos.filter((_, idx) => idx !== i);
 	}
+
+	/** @type {import('@sveltejs/kit').SubmitFunction} */
+	const onSubmit = ({ formData, cancel, action }) => {
+		if (saving) {
+			cancel();
+			return;
+		}
+		clientError = '';
+		formData.set('clienteId', clienteId);
+		formData.set('idempotencyKey', idem);
+
+		if (!clienteId) {
+			clientError = 'Selecciona un cliente de la lista (escribe y elige una opción).';
+			cancel();
+			return;
+		}
+
+		const mode = action.search.includes('enviar') ? 'enviar' : 'borrador';
+		saving = mode;
+
+		return async ({ update, result }) => {
+			try {
+				await update();
+			} finally {
+				if (result.type !== 'redirect') {
+					saving = null;
+					if (result.type === 'failure' || result.type === 'error') {
+						idem = crypto.randomUUID();
+					}
+				}
+			}
+		};
+	};
 </script>
 
 <div class="mx-auto max-w-3xl space-y-5">
 	<div>
 		<a href="/cotizaciones" class="text-sm text-[var(--color-brand-800)] hover:underline">← Cotizaciones</a>
-		<h1 class="font-display mt-1 text-3xl text-[var(--color-brand-900)]">Nueva cotización</h1>
-		<p class="mt-1 text-sm text-[var(--color-muted)]">
-			Número siguiente: <span class="font-semibold text-[var(--color-brand-900)]">{data.numeroSiguiente}</span>
-		</p>
+		<header class="page-header mt-1">
+			<h1>Nueva cotización</h1>
+			<p>
+				Número siguiente:
+				<span class="font-semibold text-[var(--color-brand-900)]">{data.numeroSiguiente}</span>
+			</p>
+		</header>
 	</div>
 
-	<form
-		method="POST"
-		action="?/guardar"
-		class="card-panel space-y-4"
-		use:enhance={() => {
-			if (saving) return async () => {};
-			saving = true;
-			return async ({ update, result }) => {
-				await update();
-				if (result.type !== 'redirect') saving = false;
-			};
-		}}
-	>
+	<form method="POST" action="?/guardar" class="card-panel space-y-4" use:enhance={onSubmit}>
 		<input type="hidden" name="idempotencyKey" value={idem} />
+		<input type="hidden" name="clienteId" value={clienteId} />
 
 		<ClienteCombobox
+			name="clienteId_ui"
 			bind:value={clienteId}
-			error={fieldErrors.clienteId}
+			error={fieldErrors.clienteId || clientError}
 			initialLabel={data.initialCliente
 				? `${data.initialCliente.nombre}${data.initialCliente.empresa ? ` · ${data.initialCliente.empresa}` : ''}`
 				: ''}
@@ -210,25 +242,19 @@
 
 		{#if fieldErrors._form}<p class="field-error">{fieldErrors._form}</p>{/if}
 		{#if form?.error || form?.message}<p class="field-error">{form.error || form.message}</p>{/if}
+		{#if clientError}<p class="field-error">{clientError}</p>{/if}
 
 		<div class="grid gap-2 sm:grid-cols-2">
-			<button
-				class="btn-secondary w-full"
-				type="submit"
-				name="intent"
-				value="borrador"
-				disabled={saving || !clienteId}
-			>
-				{saving ? 'Guardando…' : 'Guardar borrador'}
+			<button class="btn-secondary w-full" type="submit" disabled={saving !== null}>
+				{saving === 'borrador' ? 'Guardando…' : 'Guardar borrador'}
 			</button>
 			<button
 				class="btn-primary w-full"
 				type="submit"
-				name="intent"
-				value="enviar"
-				disabled={saving || !clienteId}
+				formaction="?/enviar"
+				disabled={saving !== null}
 			>
-				{saving ? 'Enviando…' : 'Enviar al cliente'}
+				{saving === 'enviar' ? 'Enviando…' : 'Enviar al cliente'}
 			</button>
 		</div>
 	</form>

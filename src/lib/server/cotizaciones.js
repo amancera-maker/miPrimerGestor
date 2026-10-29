@@ -54,11 +54,29 @@ export async function crearCotizacion(input, meta = {}) {
 	if (meta.idempotencyKey) {
 		const existing = await prisma.idempotencyKey.findUnique({ where: { clave: meta.idempotencyKey } });
 		if (existing?.recursoId) {
-			const cot = await prisma.cotizacion.findUnique({
+			let cot = await prisma.cotizacion.findUnique({
 				where: { id: existing.recursoId },
 				include: { conceptos: true, cliente: true }
 			});
-			if (cot) return { ok: true, cotizacion: cot, idempotent: true };
+			if (cot) {
+				/** @type {string | null | undefined} */
+				let avisoCorreo;
+				// Reintento con "enviar": si quedó en borrador, completar el envío
+				if (meta.enviar && cot.estado === 'BORRADOR') {
+					const enviado = await cambiarEstado(cot.id, 'ENVIADA', {
+						userId: meta.userId,
+						userName: meta.userName
+					});
+					if (enviado.ok) {
+						cot = enviado.cotizacion ?? cot;
+						avisoCorreo = enviado.avisoCorreo;
+					} else {
+						avisoCorreo =
+							enviado.message || 'Cotización creada, pero no se pudo marcar como ENVIADA.';
+					}
+				}
+				return { ok: true, cotizacion: cot, idempotent: true, avisoCorreo };
+			}
 		}
 	}
 
