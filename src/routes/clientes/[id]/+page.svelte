@@ -181,8 +181,19 @@
 			</div>
 			<div class="grid gap-3 sm:grid-cols-2">
 				<div>
-					<label class="label" for="rfc">RFC</label>
-					<input class="input" id="rfc" name="rfc" maxlength="13" value={c.rfc ?? ''} />
+					<label class="label" for="rfc">RFC (opcional)</label>
+					<input
+						class="input uppercase"
+						id="rfc"
+						name="rfc"
+						maxlength="15"
+						placeholder="Ej. GODE561231GR8"
+						value={c.rfc ?? ''}
+						oninput={(e) => {
+							const el = /** @type {HTMLInputElement} */ (e.currentTarget);
+							el.value = el.value.toUpperCase().replace(/[^A-ZÑ&0-9]/gi, '');
+						}}
+					/>
 					{#if fieldErrors.rfc}<p class="field-error">{fieldErrors.rfc}</p>{/if}
 				</div>
 			<div>

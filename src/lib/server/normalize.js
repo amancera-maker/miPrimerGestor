@@ -51,9 +51,16 @@ export function normalizeTelefono(value) {
 }
 
 /**
+ * Limpia RFC: mayúsculas, sin espacios/guiones/puntos.
  * @param {string | null | undefined} rfc
  */
 export function normalizeRfc(rfc) {
 	if (rfc == null || String(rfc).trim() === '') return null;
-	return String(rfc).trim().toUpperCase().replace(/\s+/g, '');
+	const cleaned = String(rfc)
+		.trim()
+		.toUpperCase()
+		.normalize('NFD')
+		.replace(/\p{M}/gu, '')
+		.replace(/[^A-ZÑ&0-9]/g, '');
+	return cleaned || null;
 }

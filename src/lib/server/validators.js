@@ -2,7 +2,19 @@ import { z } from 'zod';
 import { normalizeNombre, normalizeRfc, normalizeTelefono } from './normalize.js';
 import { money } from './money.js';
 
-const rfcRegex = /^([A-ZÑ&]{3,4})\d{6}[A-Z0-9]{3}$/;
+/** Formato SAT estricto: 3–4 letras + AAMMDD + homoclave 3. */
+const rfcRegexEstricto = /^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$/;
+/** Captura flexible (demo / variantes): 12 o 13 caracteres alfanuméricos. */
+const rfcRegexFlexible = /^[A-ZÑ&0-9]{12,13}$/;
+
+/**
+ * @param {string | null | undefined} value
+ */
+export function isValidRfc(value) {
+	const n = normalizeRfc(value);
+	if (!n) return true;
+	return rfcRegexEstricto.test(n) || rfcRegexFlexible.test(n);
+}
 
 export const clienteSchema = z.object({
 	nombre: z
@@ -17,8 +29,9 @@ export const clienteSchema = z.object({
 		.optional()
 		.nullable()
 		.or(z.literal(''))
-		.refine((v) => !v || rfcRegex.test(normalizeRfc(v) ?? ''), {
-			message: 'RFC mexicano inválido (12 o 13 caracteres alfanuméricos)'
+		.refine((v) => isValidRfc(v), {
+			message:
+				'RFC inválido. Debe tener 12 o 13 caracteres (sin espacios). Ej. GODE561231GR8. Déjalo vacío si no lo tienes.'
 		}),
 	correo: z
 		.string({ required_error: 'El correo es obligatorio' })
