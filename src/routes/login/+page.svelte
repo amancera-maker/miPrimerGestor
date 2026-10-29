@@ -34,10 +34,19 @@
 		<div class="login-card">
 			<p class="eyebrow">Acceso al despacho</p>
 			<h2 class="panel-title">Iniciar sesión</h2>
-			<p class="panel-sub">Usa la cuenta de Google autorizada para este despliegue.</p>
+			<p class="panel-sub">
+				{#if data.authMode === 'bypass'}
+					Modo demo: acceso directo al panel (sin Google / sin dominio Clerk).
+				{:else}
+					Usa la cuenta de Google autorizada para este despliegue.
+				{/if}
+			</p>
 
 			{#if data.authMode === 'bypass'}
-				<a class="btn-primary mt-8 w-full" href="/dashboard">Entrar (modo desarrollo)</a>
+				<a class="btn-primary mt-8 w-full" href="/dashboard">Entrar al panel</a>
+				<p class="mt-3 text-xs text-[var(--color-muted)]">
+					Activo con <code>AUTH_BYPASS=true</code>. No uses datos reales de clientes en este modo.
+				</p>
 			{:else if data.authMode === 'clerk'}
 				{#await import('svelte-clerk') then mod}
 					<div class="mt-8 flex flex-col gap-3">

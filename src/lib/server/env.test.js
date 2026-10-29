@@ -18,9 +18,10 @@ describe('isDevAuthBypassAllowed', () => {
 		vi.doUnmock('$env/dynamic/public');
 	});
 
-	it('bloquea bypass cuando NODE_ENV=production aunque DEV_BYPASS_AUTH=true', async () => {
+	it('bloquea DEV_BYPASS_AUTH cuando NODE_ENV=production', async () => {
 		process.env.NODE_ENV = 'production';
 		process.env.DEV_BYPASS_AUTH = 'true';
+		delete process.env.AUTH_BYPASS;
 		vi.doMock('$env/dynamic/private', () => ({
 			env: { NODE_ENV: 'production', DEV_BYPASS_AUTH: 'true' }
 		}));
@@ -29,9 +30,21 @@ describe('isDevAuthBypassAllowed', () => {
 		expect(isDevAuthBypassAllowed()).toBe(false);
 	});
 
+	it('permite AUTH_BYPASS en producción (demo sin dominio Clerk)', async () => {
+		process.env.NODE_ENV = 'production';
+		process.env.AUTH_BYPASS = 'true';
+		vi.doMock('$env/dynamic/private', () => ({
+			env: { NODE_ENV: 'production', AUTH_BYPASS: 'true' }
+		}));
+		vi.doMock('$env/dynamic/public', () => ({ env: {} }));
+		const { isDevAuthBypassAllowed } = await import('./env.js');
+		expect(isDevAuthBypassAllowed()).toBe(true);
+	});
+
 	it('permite bypass fuera de producción', async () => {
 		process.env.NODE_ENV = 'development';
 		process.env.DEV_BYPASS_AUTH = 'true';
+		delete process.env.AUTH_BYPASS;
 		vi.doMock('$env/dynamic/private', () => ({
 			env: { NODE_ENV: 'development', DEV_BYPASS_AUTH: 'true' }
 		}));

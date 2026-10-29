@@ -34,7 +34,7 @@ const bypassOrMissingClerk = async ({ event, resolve }) => {
 	if (useBypass()) {
 		event.locals.auth = () => ({
 			userId: 'dev-user',
-			sessionClaims: { email: 'dev@gestorpyme.local', name: 'Usuario Desarrollo' }
+			sessionClaims: { email: 'amancera@utch.edu.mx', name: 'Usuario Demo' }
 		});
 		if (event.url.pathname === '/' || event.url.pathname === '/login') {
 			redirect(303, '/dashboard');

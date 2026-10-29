@@ -61,8 +61,8 @@ export async function getSessionUser(locals) {
 	if (isDevAuthBypassAllowed()) {
 		return {
 			userId: 'dev-user',
-			email: 'dev@gestorpyme.local',
-			fullName: 'Usuario Desarrollo',
+			email: 'amancera@utch.edu.mx',
+			fullName: 'Usuario Demo',
 			imageUrl: null
 		};
 	}
