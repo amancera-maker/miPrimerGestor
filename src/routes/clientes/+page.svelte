@@ -1,6 +1,7 @@
 <script>
 	import { enhance } from '$app/forms';
-	import { invalidate } from '$app/navigation';
+	import { invalidate, goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { formatFecha } from '$lib/format.js';
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import Modal from '$lib/components/Modal.svelte';
@@ -22,6 +23,7 @@
 	let toasts = $state([]);
 	/** @type {Record<string, string>} */
 	let values = $state({});
+	let telefonoDraft = $state('');
 
 	const PAGE_SIZE = 20;
 
@@ -49,7 +51,10 @@
 	});
 
 	$effect(() => {
-		if (form?.values) values = { ...form.values };
+		if (form?.values) {
+			values = { ...form.values };
+			telefonoDraft = String(form.values.telefono ?? '');
+		}
 		if (form?.success) {
 			showModal = false;
 			editing = null;
@@ -60,9 +65,11 @@
 		}
 		if (form?.message && !form?.success && !form?.errors && !form?.fieldErrors) {
 			pushToast('error', form.message);
+			saving = false;
 		}
 		if ((form?.errors || form?.fieldErrors) && !form?.success) {
 			showModal = true;
+			saving = false;
 		}
 	});
 
@@ -82,6 +89,7 @@
 		modalMode = 'crear';
 		editing = null;
 		values = {};
+		telefonoDraft = '';
 		idem = crypto.randomUUID();
 		showModal = true;
 	}
@@ -101,14 +109,23 @@
 			direccion: c.direccion ?? '',
 			notas: c.notas ?? ''
 		};
+		telefonoDraft = c.telefono ?? '';
 		showModal = true;
 	}
 
-	/** @param {any} c */
-	function confirmarDesactivar(c) {
-		if (!confirm(`¿Desactivar a ${c.nombre}? Dejará de aparecer en listados activos.`)) return;
-		const formEl = /** @type {HTMLFormElement | null} */ (document.getElementById(`desactivar-${c.id}`));
-		formEl?.requestSubmit();
+	/** @param {Event} e */
+	function onTelefonoInput(e) {
+		const el = /** @type {HTMLInputElement} */ (e.currentTarget);
+		// Solo dígitos y separadores telefónicos
+		telefonoDraft = el.value.replace(/[^\d\s+\-().]/g, '');
+		el.value = telefonoDraft;
+	}
+
+	function toggleInactivos() {
+		const url = new URL($page.url);
+		if (data.mostrarInactivos) url.searchParams.delete('inactivos');
+		else url.searchParams.set('inactivos', '1');
+		goto(`${url.pathname}${url.search}`, { invalidateAll: true });
 	}
 
 	const fieldErrors = $derived(form?.errors ?? form?.fieldErrors ?? {});
@@ -120,10 +137,18 @@
 		<div>
 			<h1 class="font-display text-3xl text-[var(--color-brand-900)]">Clientes</h1>
 			<p class="mt-1 text-sm text-[var(--color-muted)]">
-				{clientesFiltrados.length} activo{clientesFiltrados.length === 1 ? '' : 's'}
+				{clientesFiltrados.length} registro{clientesFiltrados.length === 1 ? '' : 's'}
+				{#if !data.mostrarInactivos}
+					(activos)
+				{/if}
 			</p>
 		</div>
-		<button type="button" class="btn-primary" onclick={openCrear}>Registrar cliente</button>
+		<div class="flex flex-wrap gap-2">
+			<button type="button" class="btn-secondary" onclick={toggleInactivos}>
+				{data.mostrarInactivos ? 'Ocultar inactivos' : 'Mostrar inactivos'}
+			</button>
+			<button type="button" class="btn-primary" onclick={openCrear}>Registrar cliente</button>
+		</div>
 	</div>
 
 	<input
@@ -155,13 +180,14 @@
 							<th>RFC</th>
 							<th>Correo</th>
 							<th>Teléfono</th>
+							<th>Estado</th>
 							<th>Alta</th>
 							<th>Acciones</th>
 						</tr>
 					</thead>
 					<tbody class="divide-y divide-[var(--color-line)]">
 						{#each paginaItems as c (c.id)}
-							<tr class="hover:bg-[var(--color-brand-50)]/60">
+							<tr class="hover:bg-[var(--color-brand-50)]/60 {!c.activo ? 'opacity-70' : ''}">
 								<td>
 									<a
 										class="font-medium text-[var(--color-brand-800)] hover:underline"
@@ -172,23 +198,43 @@
 								<td>{c.rfc || '—'}</td>
 								<td class="max-w-[12rem] truncate">{c.correo}</td>
 								<td>{c.telefono || '—'}</td>
+								<td>
+									<span
+										class={c.activo
+											? 'badge bg-emerald-100 text-emerald-800'
+											: 'badge bg-slate-200 text-slate-700'}
+									>
+										{c.activo ? 'Activo' : 'Inactivo'}
+									</span>
+								</td>
 								<td>{formatFecha(c.creadoEn)}</td>
 								<td>
 									<div class="flex flex-wrap gap-1">
 										<a class="btn-ghost px-2 py-1 text-xs" href={`/clientes/${c.id}`}>Ver</a>
-										<button
-											type="button"
-											class="btn-ghost px-2 py-1 text-xs"
-											onclick={() => openEditar(c)}>Editar</button
-										>
-										<form id={`desactivar-${c.id}`} method="POST" action="?/desactivar" class="inline" use:enhance>
-											<input type="hidden" name="id" value={c.id} />
+										{#if c.activo}
 											<button
 												type="button"
-												class="btn-ghost px-2 py-1 text-xs text-red-700"
-												onclick={() => confirmarDesactivar(c)}>Desactivar</button
+												class="btn-ghost px-2 py-1 text-xs"
+												onclick={() => openEditar(c)}>Editar</button
 											>
-										</form>
+											<form method="POST" action="?/desactivar" use:enhance>
+												<input type="hidden" name="id" value={c.id} />
+												<button
+													type="submit"
+													class="btn-ghost px-2 py-1 text-xs text-red-700"
+													onclick={(e) => {
+														if (!confirm(`¿Desactivar a ${c.nombre}?`)) e.preventDefault();
+													}}>Desactivar</button
+												>
+											</form>
+										{:else}
+											<form method="POST" action="?/reactivar" use:enhance>
+												<input type="hidden" name="id" value={c.id} />
+												<button type="submit" class="btn-ghost px-2 py-1 text-xs text-emerald-800"
+													>Reactivar</button
+												>
+											</form>
+										{/if}
 									</div>
 								</td>
 							</tr>
@@ -222,6 +268,7 @@
 	open={showModal}
 	title={modalMode === 'editar' ? 'Editar cliente' : 'Registrar cliente'}
 	onclose={() => {
+		if (saving) return;
 		showModal = false;
 		editing = null;
 	}}
@@ -231,10 +278,11 @@
 		action={actionName}
 		class="space-y-3"
 		use:enhance={() => {
+			if (saving) return async () => {};
 			saving = true;
-			return async ({ update }) => {
+			return async ({ update, result }) => {
 				await update();
-				saving = false;
+				if (result.type !== 'success') saving = false;
 			};
 		}}
 	>
@@ -247,6 +295,7 @@
 			<label class="label" for="nombre">Nombre completo *</label>
 			<input class="input" id="nombre" name="nombre" required value={values.nombre ?? ''} />
 			{#if fieldErrors.nombre}<p class="field-error">{fieldErrors.nombre}</p>{/if}
+			<p class="mt-1 text-xs text-[var(--color-muted)]">No puede repetirse entre clientes activos.</p>
 		</div>
 		<div>
 			<label class="label" for="empresa">Empresa</label>
@@ -264,9 +313,14 @@
 					class="input"
 					id="telefono"
 					name="telefono"
+					type="tel"
 					inputmode="tel"
+					autocomplete="tel"
+					pattern="[\d\s+\-().]*"
+					title="Solo dígitos y separadores (+, espacios, guiones)"
 					placeholder="+52 614 123 4567"
-					value={values.telefono ?? ''}
+					value={telefonoDraft}
+					oninput={onTelefonoInput}
 				/>
 				{#if fieldErrors.telefono}<p class="field-error">{fieldErrors.telefono}</p>{/if}
 			</div>

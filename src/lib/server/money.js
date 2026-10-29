@@ -86,9 +86,10 @@ export function calcularSaldo(total, montosPagos = []) {
 	return {
 		total: toMoneyString(t),
 		pagado: toMoneyString(pagado),
-		pendiente: toMoneyString(pendiente),
-		estaPagada: pendiente.eq(0),
-		pendienteDecimal: pendiente,
+		// lte(0): cubre total exacto o redondeos; PAGADA automática no exige eq estricto
+		pendiente: toMoneyString(pendiente.lt(0) ? new Decimal(0) : pendiente),
+		estaPagada: pendiente.lte(0),
+		pendienteDecimal: pendiente.lt(0) ? new Decimal(0) : pendiente,
 		pagadoDecimal: pagado
 	};
 }

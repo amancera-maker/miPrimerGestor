@@ -101,13 +101,13 @@
 			id="cliente-combo"
 			class="input"
 			type="search"
-			placeholder="Buscar por nombre, empresa o RFC…"
+			placeholder="Escribe para buscar entre todos los clientes…"
 			autocomplete="off"
 			bind:value={query}
 			oninput={(e) => onInput(/** @type {HTMLInputElement} */ (e.currentTarget).value)}
 			onfocus={() => {
 				open = true;
-				search(query);
+				search(query || '');
 			}}
 			onkeydown={onKeydown}
 			role="combobox"

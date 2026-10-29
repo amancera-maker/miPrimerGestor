@@ -11,7 +11,9 @@
 
 	const c = $derived(data.cotizacion);
 	const saldo = $derived(c.saldo);
-	const siguientes = $derived(TRANSICIONES[c.estado] ?? []);
+	const siguientes = $derived(
+		(TRANSICIONES[c.estado] ?? []).filter((/** @type {string} */ e) => e !== 'PAGADA')
+	);
 
 	let showPago = $state(false);
 	let showReabrir = $state(false);
@@ -100,6 +102,10 @@
 			{/if}
 			{#if canPay}
 				<button type="button" class="btn-primary" onclick={() => (showPago = true)}>Registrar pago</button>
+			{:else if !['PAGADA', 'RECHAZADA', 'BORRADOR'].includes(c.estado)}
+				<p class="text-xs text-[var(--color-muted)] max-w-[14rem] text-right">
+					Los pagos solo se registran en APROBADA o FACTURADA.
+				</p>
 			{/if}
 		</div>
 	</div>
@@ -135,12 +141,28 @@
 					</form>
 				{/if}
 				{#if c.estado === 'RECHAZADA'}
-					<button type="button" class="btn-secondary" onclick={() => (showReabrir = true)}>Reabrir como borrador</button>
+					<button type="button" class="btn-primary" onclick={() => (showReabrir = true)}
+						>Reabrir como borrador</button
+					>
 				{/if}
 			</div>
-			<p class="mt-3 text-xs text-[var(--color-muted)]">
-				PAGADA se asigna automáticamente cuando los pagos cubren el total. No hay botón manual.
-			</p>
+			{#if c.estado === 'RECHAZADA'}
+				<p class="mt-3 text-sm text-[var(--color-muted)]">
+					Rechazada: usa <strong>Reabrir como borrador</strong> (con motivo) para volver a editarla y
+					enviarla.
+				</p>
+			{:else}
+				<p class="mt-3 text-xs text-[var(--color-muted)]">
+					PAGADA se asigna sola al cubrir el total con pagos. No hay botón manual de “pagada”.
+				</p>
+			{/if}
+		</div>
+	{:else if c.estado === 'RECHAZADA'}
+		<div class="card-panel">
+			<h2 class="mb-3 font-semibold">Cotización rechazada</h2>
+			<button type="button" class="btn-primary" onclick={() => (showReabrir = true)}
+				>Reabrir como borrador</button
+			>
 		</div>
 	{/if}
 
@@ -310,9 +332,11 @@
 					name="fecha"
 					type="date"
 					required
+					min={toInputDate(c.fecha)}
 					value={toInputDate(new Date())}
 				/>
 				{#if fieldErrors.fecha}<p class="field-error">{fieldErrors.fecha}</p>{/if}
+				<p class="mt-1 text-xs text-[var(--color-muted)]">No puede ser anterior a la emisión.</p>
 			</div>
 			<div>
 				<label class="label" for="metodo">Método *</label>

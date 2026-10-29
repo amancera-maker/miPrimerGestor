@@ -67,10 +67,11 @@
 		action="?/guardar"
 		class="card-panel space-y-4"
 		use:enhance={() => {
+			if (saving) return async () => {};
 			saving = true;
-			return async ({ update }) => {
+			return async ({ update, result }) => {
 				await update();
-				saving = false;
+				if (result.type !== 'redirect') saving = false;
 			};
 		}}
 	>
@@ -105,9 +106,11 @@
 					name="vencimiento"
 					type="date"
 					required
+					min={form?.values?.fecha ?? data.defaults.fecha}
 					value={form?.values?.vencimiento ?? data.defaults.vencimiento}
 				/>
 				{#if fieldErrors.vencimiento}<p class="field-error">{fieldErrors.vencimiento}</p>{/if}
+				<p class="mt-1 text-xs text-[var(--color-muted)]">Debe ser igual o posterior a la emisión.</p>
 			</div>
 		</div>
 
@@ -150,9 +153,18 @@
 										type="number"
 										min="1"
 										step="1"
+										inputmode="numeric"
 										bind:value={c.cantidad}
 										required
+										oninput={(e) => {
+											const el = /** @type {HTMLInputElement} */ (e.currentTarget);
+											el.value = el.value.replace(/[^\d]/g, '');
+											c.cantidad = el.value || '1';
+										}}
 									/>
+									{#if fieldErrors[`conceptos.${i}.cantidad`]}
+										<p class="field-error">{fieldErrors[`conceptos.${i}.cantidad`]}</p>
+									{/if}
 								</td>
 								<td>
 									<input

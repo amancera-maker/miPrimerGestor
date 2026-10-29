@@ -142,6 +142,7 @@
 					<span class="text-lg" aria-hidden="true">📄</span>
 				</div>
 				<p class="mt-2 break-all text-xl font-semibold sm:text-2xl">{formatMXN(data.totalFacturado)}</p>
+				<p class="mt-1 text-[11px] text-[var(--color-muted)]">Solo cotizaciones marcadas FACTURADA</p>
 			</div>
 			<div class="card-panel min-w-0">
 				<div class="flex items-start justify-between gap-2">
@@ -162,6 +163,7 @@
 				<p class="mt-2 break-all text-xl font-semibold text-red-700 sm:text-2xl">
 					{formatMXN(data.carteraPendiente)}
 				</p>
+				<p class="mt-1 text-[11px] text-[var(--color-muted)]">APROBADA / FACTURADA con saldo &gt; 0</p>
 			</div>
 			<div class="card-panel min-w-0">
 				<div class="flex items-start justify-between gap-2">

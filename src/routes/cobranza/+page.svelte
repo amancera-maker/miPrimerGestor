@@ -69,7 +69,10 @@
 	</div>
 
 	{#if data.cartera.items.length === 0}
-		<EmptyState title="Sin pendientes de cobro" description="Cuando haya saldos abiertos aparecerán aquí." />
+		<EmptyState
+			title="Sin pendientes de cobro"
+			description="Aquí solo aparecen cotizaciones APROBADAS o FACTURADAS con saldo pendiente. Si ya están PAGADAS o aún están en borrador/enviada, no salen en cobranza."
+		/>
 	{:else}
 		<div class="card-panel p-0">
 			<div class="table-wrap">

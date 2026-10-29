@@ -71,8 +71,17 @@ export function parseCliente(input) {
 }
 
 const conceptoSchema = z.object({
-	descripcion: z.string().trim().min(1, 'La descripción del concepto es obligatoria'),
-	cantidad: z.coerce.number().int('La cantidad debe ser un entero').positive('La cantidad debe ser mayor que cero'),
+	descripcion: z
+		.string({ required_error: 'La descripción del concepto es obligatoria' })
+		.trim()
+		.min(1, 'La descripción del concepto es obligatoria'),
+	cantidad: z.preprocess((v) => {
+		if (v === '' || v == null) return v;
+		const n = Number(v);
+		return Number.isFinite(n) ? n : v;
+	}, z.number({ invalid_type_error: 'La cantidad debe ser un número entero' })
+		.int('La cantidad debe ser un entero (sin decimales)')
+		.positive('La cantidad debe ser mayor que cero')),
 	precioUnitario: z.string().or(z.number())
 });
 
@@ -97,6 +106,10 @@ export function parseCotizacionInput(input) {
 			const key = issue.path.join('.') || '_form';
 			if (!fieldErrors[key]) fieldErrors[key] = issue.message;
 		}
+		if (!fieldErrors._form) {
+			const first = Object.values(fieldErrors)[0];
+			if (first) fieldErrors._form = first;
+		}
 		return { ok: false, fieldErrors };
 	}
 
@@ -110,8 +123,11 @@ export function parseCotizacionInput(input) {
 	}
 
 	conceptos.forEach((c, i) => {
-		if (!c.descripcion.trim()) {
+		if (!String(c.descripcion ?? '').trim()) {
 			fieldErrors[`conceptos.${i}.descripcion`] = 'La descripción del concepto es obligatoria';
+		}
+		if (!Number.isInteger(c.cantidad) || c.cantidad < 1) {
+			fieldErrors[`conceptos.${i}.cantidad`] = 'La cantidad debe ser un entero positivo (sin decimales)';
 		}
 		try {
 			const p = money(c.precioUnitario);
@@ -124,7 +140,17 @@ export function parseCotizacionInput(input) {
 		}
 	});
 
-	if (Object.keys(fieldErrors).length) return { ok: false, fieldErrors };
+	if (Object.keys(fieldErrors).length) {
+		if (!fieldErrors._form) {
+			fieldErrors._form =
+				fieldErrors.fecha ||
+				fieldErrors.vencimiento ||
+				fieldErrors.clienteId ||
+				Object.entries(fieldErrors).find(([k]) => k.startsWith('conceptos.'))?.[1] ||
+				'Revisa los datos del formulario';
+		}
+		return { ok: false, fieldErrors };
+	}
 
 	return {
 		ok: true,

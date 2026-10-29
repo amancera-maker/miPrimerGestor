@@ -185,11 +185,24 @@
 					<input class="input" id="rfc" name="rfc" maxlength="13" value={c.rfc ?? ''} />
 					{#if fieldErrors.rfc}<p class="field-error">{fieldErrors.rfc}</p>{/if}
 				</div>
-				<div>
-					<label class="label" for="telefono">Teléfono</label>
-					<input class="input" id="telefono" name="telefono" value={c.telefono ?? ''} />
-					{#if fieldErrors.telefono}<p class="field-error">{fieldErrors.telefono}</p>{/if}
-				</div>
+			<div>
+				<label class="label" for="telefono">Teléfono</label>
+				<input
+					class="input"
+					id="telefono"
+					name="telefono"
+					type="tel"
+					inputmode="tel"
+					pattern="[\d\s+\-().]*"
+					title="Solo dígitos y separadores"
+					value={c.telefono ?? ''}
+					oninput={(e) => {
+						const el = /** @type {HTMLInputElement} */ (e.currentTarget);
+						el.value = el.value.replace(/[^\d\s+\-().]/g, '');
+					}}
+				/>
+				{#if fieldErrors.telefono}<p class="field-error">{fieldErrors.telefono}</p>{/if}
+			</div>
 			</div>
 			<div>
 				<label class="label" for="correo">Correo *</label>

@@ -4,16 +4,17 @@ import { prisma } from '$lib/server/prisma.js';
 import { crearCliente, actualizarCliente, setClienteActivo } from '$lib/server/clientes.js';
 
 /** @type {import('./$types').PageServerLoad} */
-export async function load({ locals, depends }) {
+export async function load({ locals, depends, url }) {
 	await requireUser(locals);
 	depends('app:clientes');
 
+	const mostrarInactivos = url.searchParams.get('inactivos') === '1';
 	const clientes = await prisma.cliente.findMany({
-		where: { activo: true },
-		orderBy: { creadoEn: 'desc' }
+		where: mostrarInactivos ? undefined : { activo: true },
+		orderBy: [{ activo: 'desc' }, { creadoEn: 'desc' }]
 	});
 
-	return { clientes };
+	return { clientes, mostrarInactivos };
 }
 
 /**
@@ -36,7 +37,7 @@ async function actionCrear({ request, locals }) {
 	}
 	return {
 		success: true,
-		flash: 'Cliente registrado exitosamente',
+		flash: result.idempotent ? 'Cliente ya registrado (envío duplicado ignorado)' : 'Cliente registrado exitosamente',
 		clienteId: result.cliente.id
 	};
 }
@@ -59,7 +60,7 @@ async function actionEditar({ request, locals }) {
 	if (!actual) return fail(404, { errors: { _form: 'Cliente no encontrado' } });
 	if (!actual.activo) {
 		return fail(400, {
-			errors: { _form: 'Solo se pueden editar clientes activos' },
+			errors: { _form: 'Solo se pueden editar clientes activos. Reactívalo primero.' },
 			values: input
 		});
 	}
@@ -89,11 +90,26 @@ async function actionDesactivar({ request, locals }) {
 	return { success: true, flash: 'Cliente desactivado' };
 }
 
+/**
+ * @param {import('@sveltejs/kit').RequestEvent} event
+ */
+async function actionReactivar({ request, locals }) {
+	const auth = await requireUserAction(locals);
+	if (!auth.ok) return fail(auth.status, { message: auth.message });
+
+	const fd = await request.formData();
+	const id = String(fd.get('id') || '');
+	const result = await setClienteActivo(id, true);
+	if (!result.ok) return fail(400, { message: result.message });
+	return { success: true, flash: 'Cliente reactivado' };
+}
+
 /** @type {import('./$types').Actions} */
 export const actions = {
 	crear: actionCrear,
 	editar: actionEditar,
 	desactivar: actionDesactivar,
+	reactivar: actionReactivar,
 	create: actionCrear,
 	deactivate: actionDesactivar
 };

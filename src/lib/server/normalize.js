@@ -24,8 +24,11 @@ export function normalizeTelefono(value) {
 		return { ok: true, normalizado: null, display: null };
 	}
 	const raw = String(value).trim();
-	if (/[a-zA-ZáéíóúÁÉÍÓÚñÑ]/.test(raw)) {
-		return { ok: false, error: 'El teléfono no debe contener letras' };
+	if (/[^\d\s+\-().]/.test(raw)) {
+		return {
+			ok: false,
+			error: 'El teléfono solo admite dígitos (opcionalmente espacios, +, guiones o paréntesis)'
+		};
 	}
 	const digits = raw.replace(/\D/g, '');
 	let national = digits;

@@ -315,7 +315,7 @@ export async function setClienteActivo(id, activo) {
  * @param {number} [page]
  */
 export async function buscarClientesActivos(q, page = 1) {
-	const take = 20;
+	const take = 40;
 	const skip = (Math.max(1, page) - 1) * take;
 	const where = {
 		activo: true,

@@ -86,7 +86,8 @@ export async function registrarPago(cotizacionId, input, meta = {}) {
 					{ raw: true }
 				);
 
-				if (nuevoSaldo.estaPagada) {
+				// PAGADA solo automática cuando la suma de pagos cubre el total
+				if (nuevoSaldo.estaPagada || nuevoSaldo.pendienteDecimal.lte(0)) {
 					await tx.cotizacion.update({
 						where: { id: cotizacionId },
 						data: { estado: 'PAGADA' }

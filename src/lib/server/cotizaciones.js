@@ -221,7 +221,14 @@ export async function cambiarEstado(id, nuevoEstado, meta = {}) {
 	if (nuevoEstado === 'PAGADA') {
 		return {
 			ok: false,
-			message: 'El estado PAGADA solo se alcanza automáticamente al registrar pagos que cubran el total.'
+			message:
+				'No puedes marcar PAGADA manualmente. Registra pagos hasta cubrir el total; el estado cambia solo.'
+		};
+	}
+	if (cot.estado === 'RECHAZADA' && nuevoEstado !== 'BORRADOR') {
+		return {
+			ok: false,
+			message: 'Una cotización rechazada solo puede reabrirse como borrador (con motivo).'
 		};
 	}
 
