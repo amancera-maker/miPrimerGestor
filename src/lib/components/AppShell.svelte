@@ -70,31 +70,31 @@
 	{/if}
 
 	<div class="flex min-w-0 flex-col">
-		<header class="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-[var(--color-line)] bg-white/90 px-3 py-3 backdrop-blur sm:px-6">
+		<header class="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-2 border-b border-[var(--color-line)] bg-white/90 px-3 py-3 backdrop-blur sm:gap-3 sm:px-6">
 			<div class="flex min-w-0 items-center gap-2">
-				<button type="button" class="btn-secondary lg:hidden" onclick={() => (mobileOpen = true)} aria-label="Abrir menú">
+				<button type="button" class="btn-secondary px-3 lg:hidden" onclick={() => (mobileOpen = true)} aria-label="Abrir menú">
 					Menú
 				</button>
-				<p class="truncate font-display text-lg text-[var(--color-brand-900)] lg:hidden">GestorPyme</p>
+				<p class="truncate font-display text-base text-[var(--color-brand-900)] sm:text-lg lg:hidden">GestorPyme</p>
 			</div>
-			<div class="flex min-w-0 items-center gap-3">
+			<div class="flex min-w-0 max-w-full items-center gap-2 sm:gap-3">
 				{#if user.imageUrl}
-					<img src={user.imageUrl} alt="" class="h-9 w-9 rounded-full object-cover" />
+					<img src={user.imageUrl} alt="" class="h-9 w-9 shrink-0 rounded-full object-cover" />
 				{:else}
-					<div class="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-brand-100)] text-sm font-semibold text-[var(--color-brand-900)]">
+					<div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-100)] text-sm font-semibold text-[var(--color-brand-900)]">
 						{(user.fullName || user.email || 'U').slice(0, 1).toUpperCase()}
 					</div>
 				{/if}
-				<div class="min-w-0 text-right">
-					<p class="truncate text-sm font-semibold">{user.fullName || 'Usuario'}</p>
-					<p class="truncate text-xs text-[var(--color-muted)]">{user.email || ''}</p>
+				<div class="hidden min-w-0 text-right xs:block sm:block">
+					<p class="max-w-[9rem] truncate text-sm font-semibold sm:max-w-[14rem]">{user.fullName || 'Usuario'}</p>
+					<p class="max-w-[9rem] truncate text-xs text-[var(--color-muted)] sm:max-w-[14rem]">{user.email || ''}</p>
 				</div>
-				<form method="POST" action="/logout">
-					<button type="submit" class="btn-secondary">Salir</button>
+				<form method="POST" action="/logout" class="shrink-0">
+					<button type="submit" class="btn-secondary px-3">Salir</button>
 				</form>
 			</div>
 		</header>
-		<main class="mx-auto w-full max-w-7xl flex-1 px-3 py-4 sm:px-6 sm:py-6">
+		<main class="mx-auto w-full max-w-7xl min-w-0 flex-1 overflow-x-hidden px-3 py-4 sm:px-6 sm:py-6">
 			{@render children()}
 		</main>
 	</div>

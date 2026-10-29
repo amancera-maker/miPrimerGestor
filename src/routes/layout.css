@@ -26,6 +26,7 @@
 	}
 	body {
 		min-height: 100%;
+		overflow-x: hidden;
 		background: var(--color-surface);
 		font-family: var(--font-sans);
 		color: var(--color-ink);

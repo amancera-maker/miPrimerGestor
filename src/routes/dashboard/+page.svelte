@@ -76,33 +76,33 @@
 		<div class="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">{data.error}</div>
 	{:else if data.dashboard}
 		{@const k = data.dashboard.kpis}
-		<div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-			<div class="card-panel">
+		<div class="grid grid-cols-1 gap-3 min-[380px]:grid-cols-2 xl:grid-cols-4">
+			<div class="card-panel min-w-0">
 				<p class="text-xs font-semibold tracking-wide text-[var(--color-muted)] uppercase">Facturado del mes</p>
-				<p class="mt-2 text-2xl font-semibold">{formatMXN(k.facturadoMes)}</p>
+				<p class="mt-2 break-all text-xl font-semibold sm:text-2xl">{formatMXN(k.facturadoMes)}</p>
 			</div>
-			<div class="card-panel">
+			<div class="card-panel min-w-0">
 				<p class="text-xs font-semibold tracking-wide text-[var(--color-muted)] uppercase">Cobrado del mes</p>
-				<p class="mt-2 text-2xl font-semibold">{formatMXN(k.cobradoMes)}</p>
+				<p class="mt-2 break-all text-xl font-semibold sm:text-2xl">{formatMXN(k.cobradoMes)}</p>
 			</div>
-			<div class="card-panel">
+			<div class="card-panel min-w-0">
 				<p class="text-xs font-semibold tracking-wide text-[var(--color-muted)] uppercase">Cartera pendiente</p>
-				<p class="mt-2 text-2xl font-semibold">{formatMXN(k.carteraPendiente)}</p>
+				<p class="mt-2 break-all text-xl font-semibold sm:text-2xl">{formatMXN(k.carteraPendiente)}</p>
 			</div>
-			<div class="card-panel">
+			<div class="card-panel min-w-0">
 				<p class="text-xs font-semibold tracking-wide text-[var(--color-muted)] uppercase">Cotizaciones activas</p>
-				<p class="mt-2 text-2xl font-semibold">{k.cotizacionesActivas}</p>
+				<p class="mt-2 text-xl font-semibold sm:text-2xl">{k.cotizacionesActivas}</p>
 			</div>
 		</div>
 
 		<div class="grid gap-4 lg:grid-cols-2">
-			<div class="card-panel">
+			<div class="card-panel min-w-0 overflow-hidden">
 				<h2 class="mb-3 font-semibold">Ingresos cobrados (6 meses)</h2>
-				<div class="h-64"><canvas bind:this={barsEl}></canvas></div>
+				<div class="relative h-56 w-full max-w-full sm:h-64"><canvas class="max-w-full" bind:this={barsEl}></canvas></div>
 			</div>
-			<div class="card-panel">
+			<div class="card-panel min-w-0 overflow-hidden">
 				<h2 class="mb-3 font-semibold">Cotizaciones por estado</h2>
-				<div class="h-64"><canvas bind:this={donutEl}></canvas></div>
+				<div class="relative h-56 w-full max-w-full sm:h-64"><canvas class="max-w-full" bind:this={donutEl}></canvas></div>
 			</div>
 		</div>
 

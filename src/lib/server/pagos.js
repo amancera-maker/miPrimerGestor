@@ -3,6 +3,7 @@ import { parsePagoInput } from './validators.js';
 import { money, toMoneyString } from './money.js';
 import { saldoDeCotizacion } from './finance.js';
 import { logError } from './logger.js';
+import { Prisma } from '@prisma/client';
 
 /**
  * @param {string} cotizacionId
@@ -27,93 +28,100 @@ export async function registrarPago(cotizacionId, input, meta = {}) {
 	}
 
 	try {
-		const result = await prisma.$transaction(async (tx) => {
-			const cot = await tx.cotizacion.findUnique({
-				where: { id: cotizacionId },
-				include: { pagos: true }
-			});
-			if (!cot) {
-				const err = new Error('NOT_FOUND');
-				/** @type {any} */ (err).code = 'NOT_FOUND';
-				throw err;
-			}
-			if (!['APROBADA', 'FACTURADA'].includes(cot.estado)) {
-				const err = new Error('ESTADO_INVALIDO');
-				/** @type {any} */ (err).code = 'ESTADO_INVALIDO';
-				throw err;
-			}
+		const result = await prisma.$transaction(
+			async (tx) => {
+				// Bloqueo de fila para coherencia ante pagos concurrentes
+				await tx.$executeRaw`SELECT id FROM "Cotizacion" WHERE id = ${cotizacionId} FOR UPDATE`;
 
-			const saldo = saldoDeCotizacion(cot, { raw: true });
-			const monto = money(parsed.data.monto);
-			if (monto.gt(saldo.pendienteDecimal)) {
-				const err = new Error('MONTO_EXCEDE');
-				/** @type {any} */ (err).code = 'MONTO_EXCEDE';
-				/** @type {any} */ (err).pendiente = saldo.pendiente;
-				throw err;
-			}
-
-			const fechaEmision = new Date(cot.fecha);
-			fechaEmision.setUTCHours(0, 0, 0, 0);
-			const fechaPago = new Date(parsed.data.fecha);
-			fechaPago.setUTCHours(12, 0, 0, 0);
-			if (fechaPago < fechaEmision) {
-				const err = new Error('FECHA_ANTERIOR');
-				/** @type {any} */ (err).code = 'FECHA_ANTERIOR';
-				throw err;
-			}
-
-			const pago = await tx.pago.create({
-				data: {
-					cotizacionId,
-					monto: toMoneyString(monto),
-					fecha: parsed.data.fecha,
-					metodo: parsed.data.metodo,
-					referencia: parsed.data.referencia,
-					creadoPorId: meta.userId,
-					creadoPorNombre: meta.userName,
-					idempotencyKey: parsed.data.idempotencyKey || null
-				}
-			});
-
-			const pagosActualizados = [...cot.pagos, pago];
-			const nuevoSaldo = saldoDeCotizacion({ total: cot.total, pagos: pagosActualizados }, { raw: true });
-
-			let estado = cot.estado;
-			if (nuevoSaldo.estaPagada) {
-				estado = 'PAGADA';
-				await tx.cotizacion.update({
+				const cot = await tx.cotizacion.findUnique({
 					where: { id: cotizacionId },
-					data: { estado: 'PAGADA' }
+					include: { pagos: true }
 				});
-				await tx.historialCot.create({
-					data: {
-						cotizacionId,
-						estadoAnterior: cot.estado,
-						estadoNuevo: 'PAGADA',
-						nota: 'Pago completo registrado — estado automático PAGADA',
-						usuarioId: meta.userId,
-						usuarioNombre: meta.userName
-					}
-				});
-			} else {
-				await tx.historialCot.create({
-					data: {
-						cotizacionId,
-						estadoAnterior: cot.estado,
-						estadoNuevo: cot.estado,
-						nota: `Pago registrado: ${toMoneyString(monto)} (${parsed.data.metodo})`,
-						usuarioId: meta.userId,
-						usuarioNombre: meta.userName
-					}
-				});
-			}
+				if (!cot) {
+					const err = new Error('NOT_FOUND');
+					/** @type {any} */ (err).code = 'NOT_FOUND';
+					throw err;
+				}
+				if (!['APROBADA', 'FACTURADA'].includes(cot.estado)) {
+					const err = new Error('ESTADO_INVALIDO');
+					/** @type {any} */ (err).code = 'ESTADO_INVALIDO';
+					throw err;
+				}
 
-			const cotizacion = await tx.cotizacion.findUnique({
-				where: { id: cotizacionId },
-				include: { pagos: true, cliente: true, conceptos: true }
-			});
-			return { pago, cotizacion, estado };
-		});
+				const saldo = saldoDeCotizacion(cot, { raw: true });
+				const monto = money(parsed.data.monto);
+				if (monto.gt(saldo.pendienteDecimal)) {
+					const err = new Error('MONTO_EXCEDE');
+					/** @type {any} */ (err).code = 'MONTO_EXCEDE';
+					/** @type {any} */ (err).pendiente = saldo.pendiente;
+					throw err;
+				}
+
+				const fechaEmision = new Date(cot.fecha);
+				fechaEmision.setUTCHours(0, 0, 0, 0);
+				const fechaPago = new Date(parsed.data.fecha);
+				fechaPago.setUTCHours(12, 0, 0, 0);
+				if (fechaPago < fechaEmision) {
+					const err = new Error('FECHA_ANTERIOR');
+					/** @type {any} */ (err).code = 'FECHA_ANTERIOR';
+					throw err;
+				}
+
+				const pago = await tx.pago.create({
+					data: {
+						cotizacionId,
+						monto: toMoneyString(monto),
+						fecha: parsed.data.fecha,
+						metodo: parsed.data.metodo,
+						referencia: parsed.data.referencia,
+						creadoPorId: meta.userId,
+						creadoPorNombre: meta.userName,
+						idempotencyKey: parsed.data.idempotencyKey || null
+					}
+				});
+
+				const pagosActualizados = [...cot.pagos, pago];
+				const nuevoSaldo = saldoDeCotizacion(
+					{ total: cot.total, pagos: pagosActualizados },
+					{ raw: true }
+				);
+
+				if (nuevoSaldo.estaPagada) {
+					await tx.cotizacion.update({
+						where: { id: cotizacionId },
+						data: { estado: 'PAGADA' }
+					});
+					await tx.historialCot.create({
+						data: {
+							cotizacionId,
+							estadoAnterior: cot.estado,
+							estadoNuevo: 'PAGADA',
+							nota: 'Pago completo registrado — estado automático PAGADA',
+							usuarioId: meta.userId,
+							usuarioNombre: meta.userName
+						}
+					});
+				} else {
+					await tx.historialCot.create({
+						data: {
+							cotizacionId,
+							estadoAnterior: cot.estado,
+							estadoNuevo: cot.estado,
+							nota: `Pago registrado: ${toMoneyString(monto)} (${parsed.data.metodo})`,
+							usuarioId: meta.userId,
+							usuarioNombre: meta.userName
+						}
+					});
+				}
+
+				const cotizacion = await tx.cotizacion.findUnique({
+					where: { id: cotizacionId },
+					include: { pagos: true, cliente: true, conceptos: true }
+				});
+				return { pago, cotizacion, estado: cotizacion?.estado };
+			},
+			{ isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted, timeout: 15000 }
+		);
 
 		return { ok: true, ...result };
 	} catch (e) {
@@ -122,7 +130,9 @@ export async function registrarPago(cotizacionId, input, meta = {}) {
 		if (code === 'ESTADO_INVALIDO') {
 			return {
 				ok: false,
-				fieldErrors: { _form: 'Solo se pueden registrar pagos en cotizaciones APROBADAS o FACTURADAS.' }
+				fieldErrors: {
+					_form: 'Solo se pueden registrar pagos en cotizaciones APROBADAS o FACTURADAS.'
+				}
 			};
 		}
 		if (code === 'MONTO_EXCEDE') {
@@ -136,7 +146,9 @@ export async function registrarPago(cotizacionId, input, meta = {}) {
 		if (code === 'FECHA_ANTERIOR') {
 			return {
 				ok: false,
-				fieldErrors: { fecha: 'La fecha de pago no puede ser anterior a la emisión de la cotización.' }
+				fieldErrors: {
+					fecha: 'La fecha de pago no puede ser anterior a la emisión de la cotización.'
+				}
 			};
 		}
 		if (code === 'P2002') {
@@ -163,7 +175,10 @@ export async function eliminarPago(pagoId, meta = {}) {
 			});
 			if (!pago) return { ok: false, message: 'Pago no encontrado' };
 			if (pago.cotizacion.estado === 'PAGADA') {
-				return { ok: false, message: 'No se pueden eliminar pagos de una cotización marcada como PAGADA.' };
+				return {
+					ok: false,
+					message: 'No se pueden eliminar pagos de una cotización marcada como PAGADA.'
+				};
 			}
 
 			await tx.pago.delete({ where: { id: pagoId } });

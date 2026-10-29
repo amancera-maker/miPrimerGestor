@@ -5,10 +5,23 @@ import { prisma } from './prisma.js';
 import { formatMXN } from './money.js';
 import { crearTokenPublico } from './tokens.js';
 import { logError, logInfo } from './logger.js';
+import { getMailerOverride } from './mailer.js';
 
-function getResend() {
+/**
+ * @returns {import('./mailer.js').Mailer | null}
+ */
+function getMailer() {
+	const override = getMailerOverride();
+	if (override) return override;
 	if (!env.RESEND_API_KEY) return null;
-	return new Resend(env.RESEND_API_KEY);
+	const resend = new Resend(env.RESEND_API_KEY);
+	return {
+		async send(payload) {
+			const result = await resend.emails.send(payload);
+			if (result.error) return { ok: false, error: result.error };
+			return { ok: true, id: result.data?.id || undefined };
+		}
+	};
 }
 
 async function getDespacho() {
@@ -43,14 +56,14 @@ export async function enviarCorreoCotizacion(cotizacionId) {
 		}
 	});
 
-	const resend = getResend();
-	if (!resend) {
+	const mailer = getMailer();
+	if (!mailer) {
 		await prisma.notificacion.update({
 			where: { id: notif.id },
 			data: { estado: 'FALLIDA', errorTecnico: 'RESEND_API_KEY no configurada' }
 		});
 		logError('enviarCorreoCotizacion', 'RESEND_API_KEY ausente', { cotizacionId });
-		return { ok: false };
+		return { ok: false, message: 'No se pudo enviar el correo. Intenta nuevamente.' };
 	}
 
 	try {
@@ -84,27 +97,27 @@ export async function enviarCorreoCotizacion(cotizacionId) {
 			<p style="color:#6b7280;font-size:13px">${escapeHtml(despacho.direccion)} · ${escapeHtml(despacho.telefono)} · ${escapeHtml(despacho.correo)}</p>
 		</div>`;
 
-		const result = await resend.emails.send({
+		const result = await mailer.send({
 			from: env.FROM_EMAIL || 'onboarding@resend.dev',
 			to: cot.cliente.correo,
 			subject: `Cotización ${cot.numero} — ${despacho.nombre}`,
 			html
 		});
 
-		if (result.error) {
+		if (!result.ok) {
 			await prisma.notificacion.update({
 				where: { id: notif.id },
 				data: { estado: 'FALLIDA', errorTecnico: JSON.stringify(result.error) }
 			});
 			logError('enviarCorreoCotizacion', result.error, { cotizacionId });
-			return { ok: false };
+			return { ok: false, message: 'No se pudo enviar el correo. Intenta nuevamente.' };
 		}
 
 		await prisma.notificacion.update({
 			where: { id: notif.id },
 			data: {
 				estado: 'ACEPTADA_POR_PROVEEDOR',
-				proveedorId: result.data?.id || null
+				proveedorId: result.id || null
 			}
 		});
 		await prisma.historialCot.create({
@@ -112,7 +125,7 @@ export async function enviarCorreoCotizacion(cotizacionId) {
 				cotizacionId,
 				estadoAnterior: cot.estado,
 				estadoNuevo: cot.estado,
-				nota: 'Notificación de cotización enviada al cliente'
+				nota: 'Correo de cotización aceptado por el proveedor (entrega al destinatario no confirmada)'
 			}
 		});
 		logInfo('correo_enviada_ok', { cotizacionId, notifId: notif.id });
@@ -126,7 +139,7 @@ export async function enviarCorreoCotizacion(cotizacionId) {
 			}
 		});
 		logError('enviarCorreoCotizacion', e, { cotizacionId });
-		return { ok: false };
+		return { ok: false, message: 'No se pudo enviar el correo. Intenta nuevamente.' };
 	}
 }
 
@@ -150,13 +163,13 @@ export async function enviarCorreoAprobacion(cotizacionId) {
 		}
 	});
 
-	const resend = getResend();
-	if (!resend) {
+	const mailer = getMailer();
+	if (!mailer) {
 		await prisma.notificacion.update({
 			where: { id: notif.id },
 			data: { estado: 'FALLIDA', errorTecnico: 'RESEND_API_KEY no configurada' }
 		});
-		return { ok: false };
+		return { ok: false, message: 'No se pudo enviar el correo. Intenta nuevamente.' };
 	}
 
 	try {
@@ -171,25 +184,25 @@ export async function enviarCorreoAprobacion(cotizacionId) {
 			<p style="color:#6b7280;font-size:13px">${escapeHtml(despacho.correo)} · ${escapeHtml(despacho.telefono)}</p>
 		</div>`;
 
-		const result = await resend.emails.send({
+		const result = await mailer.send({
 			from: env.FROM_EMAIL || 'onboarding@resend.dev',
 			to: cot.cliente.correo,
 			subject: `Tu cotización ${cot.numero} fue aprobada`,
 			html
 		});
 
-		if (result.error) {
+		if (!result.ok) {
 			await prisma.notificacion.update({
 				where: { id: notif.id },
 				data: { estado: 'FALLIDA', errorTecnico: JSON.stringify(result.error) }
 			});
 			logError('enviarCorreoAprobacion', result.error, { cotizacionId });
-			return { ok: false };
+			return { ok: false, message: 'No se pudo enviar el correo. Intenta nuevamente.' };
 		}
 
 		await prisma.notificacion.update({
 			where: { id: notif.id },
-			data: { estado: 'ACEPTADA_POR_PROVEEDOR', proveedorId: result.data?.id || null }
+			data: { estado: 'ACEPTADA_POR_PROVEEDOR', proveedorId: result.id || null }
 		});
 		return { ok: true };
 	} catch (e) {
@@ -198,7 +211,7 @@ export async function enviarCorreoAprobacion(cotizacionId) {
 			data: { estado: 'FALLIDA', errorTecnico: e instanceof Error ? e.message : String(e) }
 		});
 		logError('enviarCorreoAprobacion', e, { cotizacionId });
-		return { ok: false };
+		return { ok: false, message: 'No se pudo enviar el correo. Intenta nuevamente.' };
 	}
 }
 
@@ -244,8 +257,8 @@ export async function enviarRecordatorioPago(cotizacionId, meta = {}) {
 		}
 	});
 
-	const resend = getResend();
-	if (!resend) {
+	const mailer = getMailer();
+	if (!mailer) {
 		await prisma.notificacion.update({
 			where: { id: notif.id },
 			data: { estado: 'FALLIDA', errorTecnico: 'RESEND_API_KEY no configurada' }
@@ -264,14 +277,14 @@ export async function enviarRecordatorioPago(cotizacionId, meta = {}) {
 			<p style="color:#6b7280;font-size:13px">${escapeHtml(despacho.correo)}</p>
 		</div>`;
 
-		const result = await resend.emails.send({
+		const result = await mailer.send({
 			from: env.FROM_EMAIL || 'onboarding@resend.dev',
 			to: cot.cliente.correo,
 			subject: `Recordatorio de pago — ${cot.numero}`,
 			html
 		});
 
-		if (result.error) {
+		if (!result.ok) {
 			await prisma.notificacion.update({
 				where: { id: notif.id },
 				data: { estado: 'FALLIDA', errorTecnico: JSON.stringify(result.error) }
@@ -282,14 +295,14 @@ export async function enviarRecordatorioPago(cotizacionId, meta = {}) {
 
 		await prisma.notificacion.update({
 			where: { id: notif.id },
-			data: { estado: 'ACEPTADA_POR_PROVEEDOR', proveedorId: result.data?.id || null }
+			data: { estado: 'ACEPTADA_POR_PROVEEDOR', proveedorId: result.id || null }
 		});
 		await prisma.historialCot.create({
 			data: {
 				cotizacionId,
 				estadoAnterior: cot.estado,
 				estadoNuevo: cot.estado,
-				nota: `Recordatorio de pago enviado${meta.userName ? ` por ${meta.userName}` : ''}`,
+				nota: `Recordatorio de pago aceptado por el proveedor${meta.userName ? ` (${meta.userName})` : ''} — entrega no confirmada`,
 				usuarioId: meta.userId,
 				usuarioNombre: meta.userName
 			}

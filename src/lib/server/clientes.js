@@ -75,6 +75,42 @@ export async function crearCliente(input, opts = {}) {
 	const data = parsed.data;
 	try {
 		const cliente = await prisma.$transaction(async (tx) => {
+			// Reserva la clave de idempotencia primero para colapsar reintentos concurrentes
+			if (opts.idempotencyKey) {
+				try {
+					await tx.idempotencyKey.create({
+						data: {
+							clave: opts.idempotencyKey,
+							recurso: 'cliente',
+							recursoId: null
+						}
+					});
+				} catch (claimErr) {
+					if (
+						claimErr instanceof Prisma.PrismaClientKnownRequestError &&
+						claimErr.code === 'P2002'
+					) {
+						const claimed = await tx.idempotencyKey.findUnique({
+							where: { clave: opts.idempotencyKey }
+						});
+						if (claimed?.recursoId) {
+							const cli = await tx.cliente.findUnique({ where: { id: claimed.recursoId } });
+							if (cli) {
+								const err = new Error('IDEMPOTENT_HIT');
+								/** @type {any} */ (err).code = 'IDEMPOTENT_HIT';
+								/** @type {any} */ (err).cliente = cli;
+								throw err;
+							}
+						}
+						// Otra transacción aún no escribió recursoId: esperar lectura fuera
+						const err = new Error('IDEMPOTENT_RACE');
+						/** @type {any} */ (err).code = 'IDEMPOTENT_RACE';
+						throw err;
+					}
+					throw claimErr;
+				}
+			}
+
 			const dupNombre = await tx.cliente.findFirst({
 				where: { nombreClaveActiva: data.nombreNormalizado }
 			});
@@ -99,13 +135,9 @@ export async function crearCliente(input, opts = {}) {
 				}
 			});
 			if (opts.idempotencyKey) {
-				await tx.idempotencyKey.create({
-					data: {
-						clave: opts.idempotencyKey,
-						recurso: 'cliente',
-						recursoId: created.id,
-						respuesta: { id: created.id }
-					}
+				await tx.idempotencyKey.update({
+					where: { clave: opts.idempotencyKey },
+					data: { recursoId: created.id, respuesta: { id: created.id } }
 				});
 			}
 			return created;
@@ -113,13 +145,46 @@ export async function crearCliente(input, opts = {}) {
 		return { ok: true, cliente };
 	} catch (e) {
 		const code = /** @type {any} */ (e)?.code;
+		if (code === 'IDEMPOTENT_HIT') {
+			return { ok: true, cliente: /** @type {any} */ (e).cliente, idempotent: true };
+		}
+		if (code === 'IDEMPOTENT_RACE' && opts.idempotencyKey) {
+			for (let i = 0; i < 10; i++) {
+				await new Promise((r) => setTimeout(r, 25));
+				const claimed = await prisma.idempotencyKey.findUnique({
+					where: { clave: opts.idempotencyKey }
+				});
+				if (claimed?.recursoId) {
+					const cli = await prisma.cliente.findUnique({ where: { id: claimed.recursoId } });
+					if (cli) return { ok: true, cliente: cli, idempotent: true };
+				}
+			}
+		}
 		if (code === 'DUPLICATE_NOMBRE' || code === 'P2002') {
+			if (opts.idempotencyKey) {
+				const claimed = await prisma.idempotencyKey.findUnique({
+					where: { clave: opts.idempotencyKey }
+				});
+				if (claimed?.recursoId) {
+					const cli = await prisma.cliente.findUnique({ where: { id: claimed.recursoId } });
+					if (cli) return { ok: true, cliente: cli, idempotent: true };
+				}
+			}
 			const target = /** @type {any} */ (e)?.meta?.target;
 			if (code === 'DUPLICATE_RFC' || (Array.isArray(target) && target.includes('rfc'))) {
 				return {
 					ok: false,
 					fieldErrors: { rfc: 'Ya existe un cliente con este RFC' }
 				};
+			}
+			if (Array.isArray(target) && target.includes('clave')) {
+				const claimed = await prisma.idempotencyKey.findUnique({
+					where: { clave: /** @type {string} */ (opts.idempotencyKey) }
+				});
+				if (claimed?.recursoId) {
+					const cli = await prisma.cliente.findUnique({ where: { id: claimed.recursoId } });
+					if (cli) return { ok: true, cliente: cli, idempotent: true };
+				}
 			}
 			return {
 				ok: false,

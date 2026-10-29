@@ -10,14 +10,14 @@
 | 1 | Init SvelteKit, deps, arquitectura | **COMPLETADA** |
 | 2 | Prisma, modelos, migraciones | **COMPLETADA** (Postgres local + migrate deploy) |
 | 3 | Clerk + protección | **PARCIAL** (svelte-clerk listo; `DEV_BYPASS_AUTH` verificado; claves Clerk pendientes) |
-| 4 | Layout responsive | **COMPLETADA** |
+| 4 | Layout responsive | **COMPLETADA** (fix overflow 320px en auditoría) |
 | 5 | CRUD clientes | **COMPLETADA** |
 | 6 | Cotizaciones y estados | **COMPLETADA** |
-| 7 | Pagos y cobranza | **COMPLETADA** |
-| 8 | Resend / notificaciones | **PARCIAL** (código listo; API key pendiente para envío real) |
+| 7 | Pagos y cobranza | **COMPLETADA** (FOR UPDATE concurrente) |
+| 8 | Resend / notificaciones | **PARCIAL** (mailer mock auditado; API key real pendiente) |
 | 9 | Dashboard financiero | **COMPLETADA** |
 | 10 | PDF y reportes | **COMPLETADA** |
-| 11 | Pruebas y producción | **PARCIAL** (unit + e2e + build OK; Render/Clerk/Resend prod pendientes) |
+| 11 | Pruebas y producción | **PARCIAL** — ver `docs/auditoria-final.md` (50 vitest + 55 playwright + HTTP) |
 
 ## Verificaciones reales ejecutadas
 

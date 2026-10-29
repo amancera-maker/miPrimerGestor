@@ -21,13 +21,13 @@ test.describe('GestorPyme smoke', () => {
 	test('navegación a clientes y cotizaciones', async ({ page }) => {
 		await page.goto('/dashboard');
 		await page.goto('/clientes');
-		await expect(page.getByRole('heading', { name: 'Clientes' })).toBeVisible();
+		await expect(page.getByRole('heading', { name: 'Clientes', exact: true })).toBeVisible();
 		await page.goto('/cotizaciones');
-		await expect(page.getByRole('heading', { name: 'Cotizaciones' })).toBeVisible();
+		await expect(page.getByRole('heading', { name: 'Cotizaciones', exact: true })).toBeVisible();
 		await page.goto('/cobranza');
-		await expect(page.getByRole('heading', { name: 'Cobranza' })).toBeVisible();
+		await expect(page.getByRole('heading', { name: 'Cobranza', exact: true })).toBeVisible();
 		await page.goto('/reportes');
-		await expect(page.getByRole('heading', { name: 'Reportes' })).toBeVisible();
+		await expect(page.getByRole('heading', { name: 'Reportes', exact: true })).toBeVisible();
 	});
 
 	test('responsive 375px sin overflow horizontal en dashboard', async ({ page }) => {
