@@ -39,6 +39,9 @@ docs_pdf_extract.txt
 *.tmp
 *.temp
 
+# Database backups (local / scripts)
+backups/
+
 # Local certificates
 *.pem
 *.key

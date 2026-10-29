@@ -1,5 +1,6 @@
 import { redirect, error } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
+import { isDevAuthBypassAllowed } from './env.js';
 
 /**
  * @typedef {{ userId: string, email: string | null, fullName: string | null, imageUrl: string | null }} AppUser
@@ -10,7 +11,7 @@ import { env } from '$env/dynamic/private';
  * @returns {Promise<AppUser | null>}
  */
 export async function getSessionUser(locals) {
-	if (env.DEV_BYPASS_AUTH === 'true' && (env.NODE_ENV !== 'production' || !env.NODE_ENV)) {
+	if (isDevAuthBypassAllowed()) {
 		return {
 			userId: 'dev-user',
 			email: 'dev@gestorpyme.local',
@@ -68,7 +69,7 @@ export async function requireUser(locals) {
 	if (!user) {
 		redirect(303, '/login');
 	}
-	if (!isEmailAuthorized(user.email) && env.DEV_BYPASS_AUTH !== 'true') {
+	if (!isEmailAuthorized(user.email) && !isDevAuthBypassAllowed()) {
 		error(403, 'Tu cuenta no está autorizada para acceder a este despacho.');
 	}
 	return user;
@@ -82,7 +83,7 @@ export async function requireUserAction(locals) {
 	if (!user) {
 		return { ok: false, status: 401, message: 'Debes iniciar sesión para continuar.' };
 	}
-	if (!isEmailAuthorized(user.email) && env.DEV_BYPASS_AUTH !== 'true') {
+	if (!isEmailAuthorized(user.email) && !isDevAuthBypassAllowed()) {
 		return { ok: false, status: 403, message: 'Tu cuenta no está autorizada para este despacho.' };
 	}
 	return { ok: true, user };

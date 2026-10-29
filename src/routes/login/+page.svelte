@@ -32,8 +32,8 @@
 				<div class="mt-8 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
 					<p class="font-semibold">Configuración pendiente</p>
 					<p class="mt-1">
-						Define PUBLIC_CLERK_PUBLISHABLE_KEY y CLERK_SECRET_KEY en .env, o usa DEV_BYPASS_AUTH=true para
-						desarrollo local.
+						Configura las claves de Clerk en el entorno del servidor. En local puedes usar
+						DEV_BYPASS_AUTH=true; en producción ese bypass está desactivado.
 					</p>
 				</div>
 			{/if}

@@ -3,6 +3,10 @@
 	"private": true,
 	"version": "1.0.0",
 	"type": "module",
+	"engines": {
+		"node": ">=22.12.0",
+		"npm": ">=10"
+	},
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build",
@@ -13,14 +17,20 @@
 		"format": "prettier --write .",
 		"test:unit": "vitest run",
 		"test:unit:watch": "vitest",
+		"test:audit": "vitest run tests/audit-*.integration.test.js tests/audit-*.test.js",
 		"test:e2e": "playwright test",
+		"test:security-http": "node tests/audit-seguridad-http.mjs",
 		"test": "npm run test:unit && npm run test:e2e",
+		"test:all": "npm run test:unit && npm run test:e2e && npm run test:security-http",
 		"db:generate": "prisma generate",
 		"db:migrate": "prisma migrate dev",
 		"db:deploy": "prisma migrate deploy",
 		"db:push": "prisma db push",
 		"db:studio": "prisma studio",
-		"start": "node build"
+		"db:backup": "node scripts/backup-db.mjs",
+		"check:env": "node scripts/check-env.mjs",
+		"smoke:prod": "node scripts/smoke-prod.mjs",
+		"start": "node build/index.js"
 	},
 	"dependencies": {
 		"@prisma/client": "^6.16.2",

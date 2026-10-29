@@ -2,6 +2,7 @@ import { redirect } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
 import { env } from '$env/dynamic/private';
 import { env as pub } from '$env/dynamic/public';
+import { isDevAuthBypassAllowed, validateProductionEnv } from '$lib/server/env.js';
 
 const PUBLIC_PATHS = ['/login', '/publico', '/api/health'];
 
@@ -13,9 +14,17 @@ function isPublic(pathname) {
 	return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
 
-const useBypass = () => env.DEV_BYPASS_AUTH === 'true';
+const useBypass = () => isDevAuthBypassAllowed();
 const clerkConfigured = () =>
 	Boolean(pub.PUBLIC_CLERK_PUBLISHABLE_KEY && env.CLERK_SECRET_KEY);
+
+const prodCheck = validateProductionEnv();
+if (!prodCheck.ok) {
+	console.error(
+		'[GestorPyme] Variables de producción incompletas o inseguras:',
+		prodCheck.missing.join(', ')
+	);
+}
 
 /** @type {import('@sveltejs/kit').Handle} */
 const bypassOrMissingClerk = async ({ event, resolve }) => {

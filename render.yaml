@@ -1,14 +1,22 @@
+# Blueprint Render — GestorPyme
+# Docs: https://render.com/docs/blueprint-spec
+# Tras conectar el repo: New → Blueprint → seleccionar este archivo.
 services:
   - type: web
     name: gestorpyme
     runtime: node
     plan: free
-    buildCommand: npm install && npx prisma generate && npm run build
-    startCommand: node build
+    region: oregon
+    branch: main
+    autoDeploy: true
+    buildCommand: npm ci && npx prisma generate && npx prisma migrate deploy && npm run build
+    startCommand: node build/index.js
     healthCheckPath: /api/health
     envVars:
       - key: NODE_VERSION
-        value: "22"
+        value: "22.12.0"
+      - key: NODE_ENV
+        value: production
       - key: DATABASE_URL
         sync: false
       - key: PUBLIC_CLERK_PUBLISHABLE_KEY
@@ -19,7 +27,21 @@ services:
         sync: false
       - key: PUBLIC_ORIGIN
         sync: false
+      - key: ORIGIN
+        sync: false
       - key: RESEND_API_KEY
         sync: false
       - key: FROM_EMAIL
+        sync: false
+      - key: DESPACHO_NOMBRE
+        sync: false
+      - key: DESPACHO_RFC
+        sync: false
+      - key: DESPACHO_CORREO
+        sync: false
+      - key: DESPACHO_TELEFONO
+        sync: false
+      - key: DESPACHO_DIRECCION
+        sync: false
+      - key: DESPACHO_TRANSFERENCIA
         sync: false
