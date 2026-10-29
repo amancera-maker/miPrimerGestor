@@ -1,55 +1,259 @@
 <script>
 	import { page } from '$app/stores';
+	import { goto } from '$app/navigation';
 
-	/** @type {{ data: { authMode: string } }} */
+	/** @type {{ data: { authMode: string, user: { email: string | null } | null } }} */
 	let { data } = $props();
+
+	$effect(() => {
+		if (data.user) {
+			goto('/dashboard');
+		}
+	});
 </script>
 
-<div class="relative min-h-dvh overflow-hidden">
-	<div
-		class="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_#1a6b4a_0%,_transparent_45%),radial-gradient(ellipse_at_bottom_right,_#0f3d2e_0%,_#071a14_55%)]"
-	></div>
-	<div class="login-pattern absolute inset-0 opacity-30" aria-hidden="true"></div>
-
-	<div class="relative mx-auto flex min-h-dvh max-w-lg flex-col justify-center px-4 py-10">
-		<div class="rounded-2xl border border-white/15 bg-white/95 p-6 shadow-2xl backdrop-blur sm:p-8">
-			<p class="font-display text-4xl text-[var(--color-brand-900)] sm:text-5xl">GestorPyme</p>
-			<p class="mt-3 text-base text-[var(--color-muted)]">
-				Gestiona clientes, cotizaciones y cobranza de tu despacho en un solo lugar.
+<div class="login-root">
+	<aside class="login-brand">
+		<div class="brand-inner">
+			<p class="brand-mark">GestorPyme</p>
+			<h1 class="brand-title">Control financiero del despacho, sin hojas sueltas.</h1>
+			<p class="brand-copy">
+				Clientes, cotizaciones, pagos y cobranza en un solo flujo — pensado para despachos
+				contables y consultoras en México.
 			</p>
+			<ul class="brand-points">
+				<li>Cotizaciones con IVA 16% e historial de estados</li>
+				<li>Cobranza alineada al saldo real</li>
+				<li>Acceso restringido al equipo autorizado</li>
+			</ul>
+		</div>
+	</aside>
+
+	<main class="login-panel">
+		<div class="login-card">
+			<p class="eyebrow">Acceso al despacho</p>
+			<h2 class="panel-title">Iniciar sesión</h2>
+			<p class="panel-sub">Usa la cuenta de Google autorizada para este despliegue.</p>
 
 			{#if data.authMode === 'bypass'}
 				<a class="btn-primary mt-8 w-full" href="/dashboard">Entrar (modo desarrollo)</a>
 			{:else if data.authMode === 'clerk'}
 				{#await import('svelte-clerk') then mod}
 					<div class="mt-8 flex flex-col gap-3">
-						<mod.SignInButton mode="modal">
-							<button type="button" class="btn-primary w-full">Iniciar sesión con Google</button>
-						</mod.SignInButton>
+						<mod.Show when="signed-in">
+							<p class="text-sm text-[var(--color-muted)]">Sesión detectada. Redirigiendo al panel…</p>
+						</mod.Show>
+						<mod.Show when="signed-out">
+							<mod.SignInButton
+								mode="modal"
+								forceRedirectUrl="/dashboard"
+								fallbackRedirectUrl="/dashboard"
+								asChild
+							>
+								{#snippet children({ signIn })}
+									<button type="button" class="btn-primary w-full google-btn" onclick={signIn}>
+										Continuar con Google
+									</button>
+								{/snippet}
+							</mod.SignInButton>
+						</mod.Show>
 					</div>
 				{/await}
 			{:else}
 				<div class="mt-8 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
 					<p class="font-semibold">Configuración pendiente</p>
 					<p class="mt-1">
-						Configura las claves de Clerk en el entorno del servidor. En local puedes usar
-						DEV_BYPASS_AUTH=true; en producción ese bypass está desactivado.
+						Faltan las claves de Clerk en el entorno del servidor. En local puedes usar
+						DEV_BYPASS_AUTH=true.
 					</p>
 				</div>
 			{/if}
 
 			{#if $page.url.searchParams.get('error') === 'unauthorized'}
-				<p class="mt-4 text-sm text-[var(--color-danger)]">
-					Tu cuenta de Google no está autorizada para este despacho.
+				<p class="mt-4 text-sm text-[var(--color-danger)]" role="alert">
+					Tu cuenta de Google no está autorizada para este despacho. Pide que agreguen tu correo a
+					AUTHORIZED_EMAILS.
 				</p>
 			{/if}
+
+			<p class="legal">Acceso privado · Un despacho por despliegue</p>
 		</div>
-	</div>
+	</main>
 </div>
 
 <style>
-	.login-pattern {
-		background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
-		background-size: 24px 24px;
+	.login-root {
+		display: grid;
+		min-height: 100dvh;
+		background: var(--color-surface);
+	}
+
+	@media (min-width: 900px) {
+		.login-root {
+			grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+		}
+	}
+
+	.login-brand {
+		display: none;
+		position: relative;
+		overflow: hidden;
+		background:
+			linear-gradient(160deg, rgba(7, 26, 20, 0.55), rgba(7, 26, 20, 0.88)),
+			radial-gradient(ellipse at 20% 10%, #1a6b4a 0%, transparent 50%),
+			linear-gradient(180deg, #0f3d2e, #071a14);
+		color: #f3faf7;
+		padding: 3rem 3.25rem;
+	}
+
+	@media (min-width: 900px) {
+		.login-brand {
+			display: flex;
+			align-items: flex-end;
+		}
+	}
+
+	.login-brand::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		background-image: linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+			linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+		background-size: 48px 48px;
+		mask-image: linear-gradient(180deg, transparent, #000 30%, #000 80%, transparent);
+		pointer-events: none;
+		opacity: 0.35;
+	}
+
+	.brand-inner {
+		position: relative;
+		z-index: 1;
+		max-width: 32rem;
+	}
+
+	.brand-mark {
+		font-family: var(--font-display);
+		font-size: 1.75rem;
+		font-weight: 700;
+		letter-spacing: -0.02em;
+	}
+
+	.brand-title {
+		margin-top: 1.75rem;
+		font-family: var(--font-display);
+		font-size: clamp(1.85rem, 2.4vw, 2.55rem);
+		font-weight: 600;
+		line-height: 1.15;
+		letter-spacing: -0.03em;
+	}
+
+	.brand-copy {
+		margin-top: 1rem;
+		max-width: 28rem;
+		font-size: 1.05rem;
+		line-height: 1.55;
+		color: rgba(243, 250, 247, 0.82);
+	}
+
+	.brand-points {
+		margin-top: 2rem;
+		display: grid;
+		gap: 0.65rem;
+		padding: 0;
+		list-style: none;
+		font-size: 0.95rem;
+		color: rgba(243, 250, 247, 0.9);
+	}
+
+	.brand-points li {
+		display: flex;
+		gap: 0.65rem;
+		align-items: flex-start;
+	}
+
+	.brand-points li::before {
+		content: '';
+		margin-top: 0.45rem;
+		width: 0.4rem;
+		height: 0.4rem;
+		flex-shrink: 0;
+		border-radius: 999px;
+		background: #7dcea0;
+	}
+
+	.login-panel {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 2rem 1.25rem;
+		background:
+			radial-gradient(ellipse at top right, rgba(26, 107, 74, 0.08), transparent 40%),
+			var(--color-surface);
+	}
+
+	.login-card {
+		width: 100%;
+		max-width: 26rem;
+		border: 1px solid var(--color-line);
+		background: #fff;
+		padding: 2rem 1.75rem;
+		box-shadow: 0 18px 40px rgba(7, 26, 20, 0.06);
+	}
+
+	@media (min-width: 640px) {
+		.login-card {
+			padding: 2.5rem 2.25rem;
+		}
+	}
+
+	.eyebrow {
+		font-size: 0.75rem;
+		font-weight: 600;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--color-brand-700);
+	}
+
+	.panel-title {
+		margin-top: 0.5rem;
+		font-family: var(--font-display);
+		font-size: 1.85rem;
+		font-weight: 700;
+		letter-spacing: -0.02em;
+		color: var(--color-brand-950);
+	}
+
+	.panel-sub {
+		margin-top: 0.5rem;
+		font-size: 0.95rem;
+		line-height: 1.5;
+		color: var(--color-muted);
+	}
+
+	.google-btn {
+		gap: 0.65rem;
+	}
+
+	.legal {
+		margin-top: 1.75rem;
+		font-size: 0.75rem;
+		color: var(--color-muted);
+		text-align: center;
+	}
+
+	@media (max-width: 899px) {
+		.login-panel {
+			min-height: 100dvh;
+		}
+
+		.login-card::before {
+			content: 'GestorPyme';
+			display: block;
+			margin-bottom: 1.25rem;
+			font-family: var(--font-display);
+			font-size: 1.5rem;
+			font-weight: 700;
+			color: var(--color-brand-900);
+		}
 	}
 </style>

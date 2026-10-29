@@ -25,7 +25,14 @@
 
 {#if data.authMode === 'clerk'}
 	{#await import('svelte-clerk') then mod}
-		<mod.ClerkProvider {...data}>
+		<mod.ClerkProvider
+			{...data}
+			signInForceRedirectUrl="/dashboard"
+			signUpForceRedirectUrl="/dashboard"
+			signInFallbackRedirectUrl="/dashboard"
+			signUpFallbackRedirectUrl="/dashboard"
+			afterSignOutUrl="/login"
+		>
 			{#if useShell && data.user}
 				<AppShell user={data.user} pathname={$page.url.pathname}>
 					{@render children()}
