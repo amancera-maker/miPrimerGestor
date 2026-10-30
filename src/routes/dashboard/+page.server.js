@@ -22,7 +22,7 @@ export async function load({ locals, cookies, depends }) {
 		return {
 			dashboard,
 			totalCobrado: k.cobradoMes,
-			pendienteCobrar: k.pendienteCobrar,
+			pendienteAprobar: k.pendienteAprobar,
 			cotsActivas: k.cotizacionesActivas,
 			cotizadoMes: k.cotizadoMes,
 			ingresosPorMes: dashboard.ingresosPorMes,
@@ -35,7 +35,7 @@ export async function load({ locals, cookies, depends }) {
 		return {
 			dashboard: null,
 			totalCobrado: '0.00',
-			pendienteCobrar: '0.00',
+			pendienteAprobar: '0.00',
 			cotsActivas: 0,
 			cotizadoMes: '0.00',
 			ingresosPorMes: [],

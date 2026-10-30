@@ -87,37 +87,43 @@ export async function obtenerDashboard() {
 	hace6.setUTCDate(1);
 	hace6.setUTCHours(0, 0, 0, 0);
 
-	const [cotizadoAgg, cobradoAgg, cartera, activas, porEstado, recientes, pagos6m] = await Promise.all([
-		// Cotizado del mes = suma de totales emitidos este mes (fecha de cotización)
-		prisma.cotizacion.aggregate({
-			_sum: { total: true },
-			where: {
-				fecha: { gte: inicio, lt: fin },
-				estado: { not: 'RECHAZADA' }
-			}
-		}),
-		prisma.pago.aggregate({
-			_sum: { monto: true },
-			where: { fecha: { gte: inicio, lt: fin } }
-		}),
-		obtenerCarteraPendiente(),
-		prisma.cotizacion.count({
-			where: { estado: { in: [...ESTADOS_ACTIVAS] } }
-		}),
-		prisma.cotizacion.groupBy({
-			by: ['estado'],
-			_count: { _all: true }
-		}),
-		prisma.cotizacion.findMany({
-			take: 5,
-			orderBy: { creadoEn: 'desc' },
-			include: { cliente: { select: { nombre: true } } }
-		}),
-		prisma.pago.findMany({
-			where: { fecha: { gte: hace6 } },
-			select: { fecha: true, monto: true }
-		})
-	]);
+	const [cotizadoAgg, cobradoAgg, sinAprobarAgg, cartera, activas, porEstado, recientes, pagos6m] =
+		await Promise.all([
+			// Cotizado del mes = suma de totales emitidos este mes (fecha de cotización)
+			prisma.cotizacion.aggregate({
+				_sum: { total: true },
+				where: {
+					fecha: { gte: inicio, lt: fin },
+					estado: { not: 'RECHAZADA' }
+				}
+			}),
+			prisma.pago.aggregate({
+				_sum: { monto: true },
+				where: { fecha: { gte: inicio, lt: fin } }
+			}),
+			// Monto de cotizaciones aún no aprobadas (borrador + enviadas)
+			prisma.cotizacion.aggregate({
+				_sum: { total: true },
+				where: { estado: { in: ['BORRADOR', 'ENVIADA'] } }
+			}),
+			obtenerCarteraPendiente(),
+			prisma.cotizacion.count({
+				where: { estado: { in: [...ESTADOS_ACTIVAS] } }
+			}),
+			prisma.cotizacion.groupBy({
+				by: ['estado'],
+				_count: { _all: true }
+			}),
+			prisma.cotizacion.findMany({
+				take: 5,
+				orderBy: { creadoEn: 'desc' },
+				include: { cliente: { select: { nombre: true } } }
+			}),
+			prisma.pago.findMany({
+				where: { fecha: { gte: hace6 } },
+				select: { fecha: true, monto: true }
+			})
+		]);
 
 	/** @type {Record<string, number>} */
 	const ingresosPorMes = {};
@@ -156,7 +162,7 @@ export async function obtenerDashboard() {
 		kpis: {
 			cotizadoMes: toMoneyString(cotizadoAgg._sum.total ?? 0),
 			cobradoMes: toMoneyString(cobradoAgg._sum.monto ?? 0),
-			pendienteCobrar: cartera.carteraPendiente,
+			pendienteAprobar: toMoneyString(sinAprobarAgg._sum.total ?? 0),
 			cotizacionesActivas: activas
 		},
 		ingresosPorMes: Object.entries(ingresosPorMes).map(([mes, total]) => ({ mes, total })),
