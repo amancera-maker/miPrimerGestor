@@ -2,8 +2,9 @@ import { Prisma } from '@prisma/client';
 import { prisma } from './prisma.js';
 import { calcularSaldo, money, toMoneyString } from './money.js';
 
-export const ESTADOS_COBRANZA = /** @type {const} */ (['APROBADA', 'FACTURADA']);
-export const ESTADOS_ACTIVAS = /** @type {const} */ (['ENVIADA', 'APROBADA', 'FACTURADA']);
+/** Cartera: solo APROBADA puede tener saldo; FACTURADA exige cobro completo. */
+export const ESTADOS_COBRANZA = /** @type {const} */ (['APROBADA']);
+export const ESTADOS_ACTIVAS = /** @type {const} */ (['ENVIADA', 'APROBADA', 'PAGADA']);
 
 /**
  * @param {{ total: any, pagos?: { monto: any }[] }} cotizacion
@@ -24,7 +25,7 @@ export function saldoDeCotizacion(cotizacion, opts = {}) {
 }
 
 /**
- * Cartera pendiente: APROBADA o FACTURADA con saldo > 0
+ * Cartera pendiente: APROBADA con saldo > 0
  */
 export async function obtenerCarteraPendiente() {
 	const rows = await prisma.cotizacion.findMany({

@@ -10,10 +10,10 @@ import { serializeCotizacion, dec } from './serialize.js';
 export const TRANSICIONES = {
 	BORRADOR: ['ENVIADA'],
 	ENVIADA: ['APROBADA', 'RECHAZADA'],
-	APROBADA: ['FACTURADA'],
+	APROBADA: [], // pagos → PAGADA automática; no se factura con saldo pendiente
 	RECHAZADA: [], // reabrir es acción especial
-	FACTURADA: [], // PAGADA solo por pagos
-	PAGADA: []
+	PAGADA: ['FACTURADA'], // solo se factura cuando ya está cobrada al 100%
+	FACTURADA: []
 };
 
 /**
@@ -255,6 +255,17 @@ export async function cambiarEstado(id, nuevoEstado, meta = {}) {
 	const permitidos = TRANSICIONES[cot.estado] ?? [];
 	if (!permitidos.includes(nuevoEstado)) {
 		return { ok: false, message: `No se puede pasar de ${cot.estado} a ${nuevoEstado}.` };
+	}
+
+	if (nuevoEstado === 'FACTURADA') {
+		const saldo = saldoDeCotizacion(cot, { raw: true });
+		if (!saldo.estaPagada && saldo.pendienteDecimal.gt(0)) {
+			return {
+				ok: false,
+				message:
+					'No puedes facturar con saldo pendiente. Registra pagos hasta cubrir el total (estado PAGADA) y luego marca FACTURADA.'
+			};
+		}
 	}
 
 	/** @type {Record<string, any>} */

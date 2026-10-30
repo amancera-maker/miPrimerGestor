@@ -369,8 +369,8 @@ export async function enviarRecordatorioPago(cotizacionId, meta = {}) {
 		include: { cliente: true, pagos: true }
 	});
 	if (!cot) return { ok: false, message: 'Cotización no encontrada' };
-	if (!['APROBADA', 'FACTURADA'].includes(cot.estado)) {
-		return { ok: false, message: 'Solo se pueden recordar cotizaciones con saldo pendiente.' };
+	if (cot.estado !== 'APROBADA') {
+		return { ok: false, message: 'Solo se pueden recordar cotizaciones APROBADAS con saldo pendiente.' };
 	}
 
 	const inicioDia = new Date();

@@ -154,7 +154,7 @@
 					</span>
 				</div>
 				<p class="kpi-value">{formatMXN(data.totalFacturado)}</p>
-				<p class="kpi-hint">Solo cotizaciones marcadas FACTURADA</p>
+				<p class="kpi-hint">Cotizaciones facturadas este mes (solo tras cobro total)</p>
 			</div>
 			<div class="kpi-card kpi-card--cobrado min-w-0">
 				<div class="flex items-start justify-between gap-2">
@@ -187,7 +187,7 @@
 					</span>
 				</div>
 				<p class="kpi-value text-[var(--color-danger)]">{formatMXN(data.carteraPendiente)}</p>
-				<p class="kpi-hint">APROBADA / FACTURADA con saldo &gt; 0</p>
+				<p class="kpi-hint">APROBADA con saldo &gt; 0</p>
 			</div>
 			<div class="kpi-card kpi-card--activas min-w-0">
 				<div class="flex items-start justify-between gap-2">

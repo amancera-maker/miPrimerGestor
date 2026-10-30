@@ -83,7 +83,7 @@
 	}
 
 	const fieldErrors = $derived(form?.fieldErrors ?? {});
-	const canPay = $derived(['APROBADA', 'FACTURADA'].includes(c.estado));
+	const canPay = $derived(c.estado === 'APROBADA');
 </script>
 
 <div class="space-y-5">
@@ -108,9 +108,17 @@
 			{/if}
 			{#if canPay}
 				<button type="button" class="btn-primary" onclick={() => (showPago = true)}>Registrar pago</button>
-			{:else if !['PAGADA', 'RECHAZADA', 'BORRADOR'].includes(c.estado)}
+			{:else if c.estado === 'PAGADA'}
 				<p class="text-xs text-[var(--color-muted)] max-w-[14rem] text-right">
-					Los pagos solo se registran en APROBADA o FACTURADA.
+					Cobrado al 100%. Ya puedes marcarla como FACTURADA.
+				</p>
+			{:else if c.estado === 'FACTURADA'}
+				<p class="text-xs text-[var(--color-muted)] max-w-[14rem] text-right">
+					Facturada y cobrada por completo.
+				</p>
+			{:else if !['RECHAZADA', 'BORRADOR'].includes(c.estado)}
+				<p class="text-xs text-[var(--color-muted)] max-w-[14rem] text-right">
+					Los pagos se registran cuando está APROBADA.
 				</p>
 			{/if}
 		</div>
@@ -162,6 +170,8 @@
 								Actualizando…
 							{:else if est === 'ENVIADA'}
 								Enviar al cliente
+							{:else if est === 'FACTURADA'}
+								Marcar facturada
 							{:else}
 								Marcar {est.toLowerCase()}
 							{/if}
@@ -202,7 +212,8 @@
 				</p>
 			{:else}
 				<p class="mt-3 text-xs text-[var(--color-muted)]">
-					PAGADA se asigna sola al cubrir el total con pagos. No hay botón manual de “pagada”.
+					Orden: aprueba → registra pagos hasta PAGADA (automático) → luego puedes marcar FACTURADA.
+					No se factura con saldo pendiente.
 				</p>
 			{/if}
 		</div>

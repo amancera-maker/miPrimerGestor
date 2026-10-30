@@ -494,14 +494,13 @@ async function main() {
 		]
 	});
 
-	// --- FACTURADA (cobranza + facturado del mes) ---
+	// --- APROBADA con pago parcial (cobranza; aún no se puede facturar) ---
 	await crearCot({
 		numero: num(),
 		clienteNombre: 'María Elena Soto',
-		estado: 'FACTURADA',
+		estado: 'APROBADA',
 		fecha: dUTC(year, mes, 4),
 		vencimiento: dUTC(year, mes, 19),
-		facturadaEn: dUTC(year, mes, 9),
 		lineas: [
 			{ descripcion: 'Aviso de privacidad y políticas', cantidad: 1, precio: '7800.00' },
 			{ descripcion: 'Capacitación personal (4 hrs)', cantidad: 4, precio: '1100.00' }
@@ -529,13 +528,7 @@ async function main() {
 			},
 			{
 				estadoAnterior: 'APROBADA',
-				estadoNuevo: 'FACTURADA',
-				nota: 'CFDI timbrado',
-				creadoEn: dUTC(year, mes, 9)
-			},
-			{
-				estadoAnterior: 'FACTURADA',
-				estadoNuevo: 'FACTURADA',
+				estadoNuevo: 'APROBADA',
 				nota: 'Pago registrado: 5000.00',
 				creadoEn: dUTC(year, mes, 10)
 			}
@@ -545,10 +538,9 @@ async function main() {
 	await crearCot({
 		numero: num(),
 		clienteNombre: 'José Alberto Ruiz',
-		estado: 'FACTURADA',
+		estado: 'APROBADA',
 		fecha: dUTC(year, mes, 7),
 		vencimiento: dUTC(year, mes, 22),
-		facturadaEn: dUTC(year, mes, 11),
 		lineas: [
 			{ descripcion: 'Trámite de subsidios SADER', cantidad: 1, precio: '6500.00' },
 			{ descripcion: 'Gestión de permisos sanitarios', cantidad: 1, precio: '3200.00' }
@@ -565,17 +557,11 @@ async function main() {
 				estadoNuevo: 'APROBADA',
 				nota: 'Aprobada',
 				creadoEn: dUTC(year, mes, 8)
-			},
-			{
-				estadoAnterior: 'APROBADA',
-				estadoNuevo: 'FACTURADA',
-				nota: 'Facturada',
-				creadoEn: dUTC(year, mes, 11)
 			}
 		]
 	});
 
-	// --- PAGADA (meses anteriores para gráfica de ingresos) ---
+	// --- FACTURADA (cobro total primero, luego factura) — meses anteriores ---
 	for (let back = 1; back <= 5; back++) {
 		const m = mes - back;
 		const y = m >= 0 ? year : year - 1;
@@ -596,11 +582,11 @@ async function main() {
 		await crearCot({
 			numero: num(),
 			clienteNombre: cn,
-			estado: 'PAGADA',
+			estado: 'FACTURADA',
 			fecha: dUTC(y, mm, 5),
 			vencimiento: dUTC(y, mm, 20),
 			creadoEn: dUTC(y, mm, 5),
-			facturadaEn: dUTC(y, mm, 12),
+			facturadaEn: dUTC(y, mm, 20),
 			lineas: totLineas,
 			pagos: [
 				{
@@ -625,28 +611,27 @@ async function main() {
 				},
 				{
 					estadoAnterior: 'APROBADA',
-					estadoNuevo: 'FACTURADA',
-					nota: 'Facturada',
-					creadoEn: dUTC(y, mm, 12)
-				},
-				{
-					estadoAnterior: 'FACTURADA',
 					estadoNuevo: 'PAGADA',
 					nota: 'Pago completo — estado automático PAGADA',
 					creadoEn: dUTC(y, mm, 18)
+				},
+				{
+					estadoAnterior: 'PAGADA',
+					estadoNuevo: 'FACTURADA',
+					nota: 'Facturada tras cobro total',
+					creadoEn: dUTC(y, mm, 20)
 				}
 			]
 		});
 	}
 
-	// PAGADA del mes actual (para cobrado del mes)
+	// PAGADA del mes (cobrada, pendiente de facturar)
 	await crearCot({
 		numero: num(),
 		clienteNombre: 'Sofía Navarro',
 		estado: 'PAGADA',
 		fecha: dUTC(year, mes, 2),
 		vencimiento: dUTC(year, mes, 12),
-		facturadaEn: dUTC(year, mes, 5),
 		lineas: [
 			{ descripcion: 'Proyecto ejecutivo vivienda', cantidad: 1, precio: '14000.00' },
 			{ descripcion: 'Visitas a obra', cantidad: 4, precio: '1500.00' }
@@ -680,18 +665,64 @@ async function main() {
 			},
 			{
 				estadoAnterior: 'APROBADA',
-				estadoNuevo: 'FACTURADA',
-				nota: 'Facturada',
-				creadoEn: dUTC(year, mes, 5)
-			},
-			{
-				estadoAnterior: 'FACTURADA',
 				estadoNuevo: 'PAGADA',
 				nota: 'Pago completo — estado automático PAGADA',
 				creadoEn: dUTC(year, mes, 12)
 			}
 		]
 	});
+
+	// FACTURADA del mes (cobrada + facturada)
+	{
+		const lineasFac = [
+			{ descripcion: 'Consultoría fiscal extraordinaria', cantidad: 1, precio: '8500.00' },
+			{ descripcion: 'Revisión de declaraciones', cantidad: 2, precio: '1500.00' }
+		];
+		const tFac = totalesDe(lineasFac);
+		await crearCot({
+			numero: num(),
+			clienteNombre: 'Diego Ponce',
+			estado: 'FACTURADA',
+			fecha: dUTC(year, mes, 3),
+			vencimiento: dUTC(year, mes, 18),
+			facturadaEn: dUTC(year, mes, 14),
+			lineas: lineasFac,
+			pagos: [
+				{
+					monto: tFac.total,
+					fecha: dUTC(year, mes, 12),
+					metodo: 'TRANSFERENCIA',
+					referencia: 'FAC-MES'
+				}
+			],
+			historial: [
+				{
+					estadoAnterior: 'BORRADOR',
+					estadoNuevo: 'ENVIADA',
+					nota: 'Enviada',
+					creadoEn: dUTC(year, mes, 3)
+				},
+				{
+					estadoAnterior: 'ENVIADA',
+					estadoNuevo: 'APROBADA',
+					nota: 'Aprobada',
+					creadoEn: dUTC(year, mes, 4)
+				},
+				{
+					estadoAnterior: 'APROBADA',
+					estadoNuevo: 'PAGADA',
+					nota: 'Pago completo — estado automático PAGADA',
+					creadoEn: dUTC(year, mes, 12)
+				},
+				{
+					estadoAnterior: 'PAGADA',
+					estadoNuevo: 'FACTURADA',
+					nota: 'Facturada tras cobro total',
+					creadoEn: dUTC(year, mes, 14)
+				}
+			]
+		});
+	}
 
 	await prisma.contadorCotizacion.create({
 		data: { anio: year, siguiente: n }

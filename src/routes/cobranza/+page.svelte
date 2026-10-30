@@ -60,7 +60,7 @@
 	<div class="flex flex-wrap items-end justify-between gap-3">
 		<header class="page-header">
 			<h1>Cobranza</h1>
-			<p>Cotizaciones APROBADAS o FACTURADAS con saldo pendiente</p>
+			<p>Cotizaciones APROBADAS con saldo pendiente (la facturación exige cobro total)</p>
 		</header>
 		<div class="kpi-card kpi-card--pendiente min-w-[14rem] py-3">
 			<p class="kpi-label">Cartera pendiente total</p>
@@ -71,7 +71,7 @@
 	{#if data.cartera.items.length === 0}
 		<EmptyState
 			title="Sin pendientes de cobro"
-			description="Aquí solo aparecen cotizaciones APROBADAS o FACTURADAS con saldo pendiente. Si ya están PAGADAS o aún están en borrador/enviada, no salen en cobranza."
+			description="Aquí solo aparecen cotizaciones APROBADAS con saldo pendiente. Al cubrir el total pasan a PAGADA y luego puedes facturarlas."
 		/>
 	{:else}
 		<div class="card-panel p-0">

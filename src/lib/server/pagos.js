@@ -42,7 +42,8 @@ export async function registrarPago(cotizacionId, input, meta = {}) {
 					/** @type {any} */ (err).code = 'NOT_FOUND';
 					throw err;
 				}
-				if (!['APROBADA', 'FACTURADA'].includes(cot.estado)) {
+				// Cobranza solo en APROBADA; FACTURADA/PAGADA ya están cobradas al 100%
+				if (cot.estado !== 'APROBADA') {
 					const err = new Error('ESTADO_INVALIDO');
 					/** @type {any} */ (err).code = 'ESTADO_INVALIDO';
 					throw err;
@@ -142,7 +143,8 @@ export async function registrarPago(cotizacionId, input, meta = {}) {
 			return {
 				ok: false,
 				fieldErrors: {
-					_form: 'Solo se pueden registrar pagos en cotizaciones APROBADAS o FACTURADAS.'
+					_form:
+						'Solo se pueden registrar pagos en cotizaciones APROBADAS. Primero cobra el total; después puedes facturar.'
 				}
 			};
 		}
