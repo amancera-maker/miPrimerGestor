@@ -8,14 +8,44 @@
 
 	let filtroEstado = $state('');
 	let filtroCliente = $state('');
+	let filtroDesde = $state('');
+	let filtroHasta = $state('');
+
+	/**
+	 * Día de la cotización en formato YYYY-MM-DD (UTC, igual que la fecha en pantalla).
+	 * @param {string | Date | null | undefined} value
+	 */
+	function diaCotizacion(value) {
+		if (!value) return '';
+		const d = value instanceof Date ? value : new Date(value);
+		if (Number.isNaN(d.getTime())) return '';
+		return d.toISOString().slice(0, 10);
+	}
 
 	const filtradas = $derived.by(() => {
+		const desde = filtroDesde;
+		const hasta = filtroHasta;
 		return (data.cotizaciones ?? []).filter((c) => {
 			if (filtroEstado && c.estado !== filtroEstado) return false;
 			if (filtroCliente && c.clienteId !== filtroCliente) return false;
+			const dia = diaCotizacion(c.fecha);
+			if (!dia) return false;
+			if (desde && dia < desde) return false;
+			if (hasta && dia > hasta) return false;
 			return true;
 		});
 	});
+
+	const hayFiltros = $derived(
+		Boolean(filtroEstado || filtroCliente || filtroDesde || filtroHasta)
+	);
+
+	function limpiarFiltros() {
+		filtroEstado = '';
+		filtroCliente = '';
+		filtroDesde = '';
+		filtroHasta = '';
+	}
 </script>
 
 <div class="space-y-5">
@@ -27,7 +57,7 @@
 		<a class="btn-primary" href="/cotizaciones/nueva">Nueva cotización</a>
 	</div>
 
-	<div class="card-panel grid gap-3 sm:grid-cols-2">
+	<div class="card-panel grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
 		<div>
 			<label class="label" for="filtro-estado">Estado</label>
 			<select class="input" id="filtro-estado" bind:value={filtroEstado}>
@@ -46,7 +76,26 @@
 				{/each}
 			</select>
 		</div>
+		<div>
+			<label class="label" for="filtro-desde">Desde</label>
+			<input class="input" id="filtro-desde" type="date" bind:value={filtroDesde} />
+		</div>
+		<div>
+			<label class="label" for="filtro-hasta">Hasta</label>
+			<input
+				class="input"
+				id="filtro-hasta"
+				type="date"
+				bind:value={filtroHasta}
+				min={filtroDesde || undefined}
+			/>
+		</div>
 	</div>
+	{#if hayFiltros}
+		<div class="flex justify-end">
+			<button type="button" class="btn-secondary" onclick={limpiarFiltros}>Quitar filtros</button>
+		</div>
+	{/if}
 
 	{#if filtradas.length === 0}
 		<EmptyState
