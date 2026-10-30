@@ -7,7 +7,6 @@ export async function load({ locals, cookies, depends }) {
 	await requireUser(locals);
 	depends('app:dashboard');
 
-	// Marca que el servidor aceptó la sesión (flujo login → dashboard)
 	cookies.set('gestorpyme_session_ok', '1', {
 		path: '/',
 		httpOnly: false,
@@ -20,14 +19,12 @@ export async function load({ locals, cookies, depends }) {
 		const dashboard = await obtenerDashboard();
 		const k = dashboard.kpis;
 
-		// Campos planos (contrato del prompt) — fuente de verdad: finance.js
-		// Facturado del mes = sum(total) donde facturadaEn ∈ mes (no por estado)
 		return {
 			dashboard,
-			totalFacturado: k.facturadoMes,
 			totalCobrado: k.cobradoMes,
-			carteraPendiente: k.carteraPendiente,
+			pendienteCobrar: k.pendienteCobrar,
 			cotsActivas: k.cotizacionesActivas,
+			cotizadoMes: k.cotizadoMes,
 			ingresosPorMes: dashboard.ingresosPorMes,
 			cotsPorEstado: dashboard.porEstado,
 			ultimasCots: dashboard.recientes,
@@ -37,10 +34,10 @@ export async function load({ locals, cookies, depends }) {
 		logError('dashboard.load', e);
 		return {
 			dashboard: null,
-			totalFacturado: '0.00',
 			totalCobrado: '0.00',
-			carteraPendiente: '0.00',
+			pendienteCobrar: '0.00',
 			cotsActivas: 0,
+			cotizadoMes: '0.00',
 			ingresosPorMes: [],
 			cotsPorEstado: [],
 			ultimasCots: [],

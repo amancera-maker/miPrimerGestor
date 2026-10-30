@@ -140,22 +140,6 @@
 		</div>
 	{:else}
 		<div class="grid grid-cols-1 gap-3.5 min-[380px]:grid-cols-2 xl:grid-cols-4">
-			<div class="kpi-card kpi-card--facturado min-w-0">
-				<div class="flex items-start justify-between gap-2">
-					<p class="kpi-label">Facturado del mes</p>
-					<span class="kpi-icon" aria-hidden="true">
-						<svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-							><path
-								d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"
-								stroke="currentColor"
-								stroke-width="1.8"
-							/><path d="M14 3v5h5M9 13h6M9 17h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></svg
-						>
-					</span>
-				</div>
-				<p class="kpi-value">{formatMXN(data.totalFacturado)}</p>
-				<p class="kpi-hint">Cotizaciones facturadas este mes (solo tras cobro total)</p>
-			</div>
 			<div class="kpi-card kpi-card--cobrado min-w-0">
 				<div class="flex items-start justify-between gap-2">
 					<p class="kpi-label">Cobrado del mes</p>
@@ -171,10 +155,11 @@
 					</span>
 				</div>
 				<p class="kpi-value">{formatMXN(data.totalCobrado)}</p>
+				<p class="kpi-hint">Suma de pagos registrados este mes</p>
 			</div>
 			<div class="kpi-card kpi-card--pendiente min-w-0">
 				<div class="flex items-start justify-between gap-2">
-					<p class="kpi-label">Cartera pendiente</p>
+					<p class="kpi-label">Pendiente de cobrar</p>
 					<span class="kpi-icon" aria-hidden="true">
 						<svg width="16" height="16" viewBox="0 0 24 24" fill="none"
 							><circle cx="12" cy="12" r="8.25" stroke="currentColor" stroke-width="1.8" /><path
@@ -186,8 +171,8 @@
 						>
 					</span>
 				</div>
-				<p class="kpi-value text-[var(--color-danger)]">{formatMXN(data.carteraPendiente)}</p>
-				<p class="kpi-hint">APROBADA con saldo &gt; 0</p>
+				<p class="kpi-value text-[var(--color-danger)]">{formatMXN(data.pendienteCobrar)}</p>
+				<p class="kpi-hint">Saldo abierto en cotizaciones APROBADAS</p>
 			</div>
 			<div class="kpi-card kpi-card--activas min-w-0">
 				<div class="flex items-start justify-between gap-2">
@@ -204,6 +189,23 @@
 					</span>
 				</div>
 				<p class="kpi-value">{data.cotsActivas}</p>
+				<p class="kpi-hint">Enviadas, aprobadas o pagadas (sin facturar)</p>
+			</div>
+			<div class="kpi-card kpi-card--facturado min-w-0">
+				<div class="flex items-start justify-between gap-2">
+					<p class="kpi-label">Cotizado del mes</p>
+					<span class="kpi-icon" aria-hidden="true">
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+							><path
+								d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"
+								stroke="currentColor"
+								stroke-width="1.8"
+							/><path d="M14 3v5h5M9 13h6M9 17h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></svg
+						>
+					</span>
+				</div>
+				<p class="kpi-value">{formatMXN(data.cotizadoMes)}</p>
+				<p class="kpi-hint">Total emitido este mes (sin rechazadas)</p>
 			</div>
 		</div>
 

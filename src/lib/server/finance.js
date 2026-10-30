@@ -87,11 +87,13 @@ export async function obtenerDashboard() {
 	hace6.setUTCDate(1);
 	hace6.setUTCHours(0, 0, 0, 0);
 
-	const [facturadoAgg, cobradoAgg, cartera, activas, porEstado, recientes, pagos6m] = await Promise.all([
+	const [cotizadoAgg, cobradoAgg, cartera, activas, porEstado, recientes, pagos6m] = await Promise.all([
+		// Cotizado del mes = suma de totales emitidos este mes (fecha de cotización)
 		prisma.cotizacion.aggregate({
 			_sum: { total: true },
 			where: {
-				facturadaEn: { gte: inicio, lt: fin }
+				fecha: { gte: inicio, lt: fin },
+				estado: { not: 'RECHAZADA' }
 			}
 		}),
 		prisma.pago.aggregate({
@@ -152,9 +154,9 @@ export async function obtenerDashboard() {
 
 	return {
 		kpis: {
-			facturadoMes: toMoneyString(facturadoAgg._sum.total ?? 0),
+			cotizadoMes: toMoneyString(cotizadoAgg._sum.total ?? 0),
 			cobradoMes: toMoneyString(cobradoAgg._sum.monto ?? 0),
-			carteraPendiente: cartera.carteraPendiente,
+			pendienteCobrar: cartera.carteraPendiente,
 			cotizacionesActivas: activas
 		},
 		ingresosPorMes: Object.entries(ingresosPorMes).map(([mes, total]) => ({ mes, total })),
