@@ -27,6 +27,8 @@
 	{#await import('svelte-clerk') then mod}
 		<mod.ClerkProvider
 			{...data}
+			signInUrl="/login"
+			signUpUrl="/registro"
 			signInForceRedirectUrl="/dashboard"
 			signUpForceRedirectUrl="/dashboard"
 			signInFallbackRedirectUrl="/dashboard"
@@ -34,7 +36,7 @@
 			afterSignOutUrl="/login"
 		>
 			{#if useShell && data.user}
-				<AppShell user={data.user} pathname={$page.url.pathname}>
+				<AppShell user={data.user} pathname={$page.url.pathname} authMode={data.authMode}>
 					{@render children()}
 				</AppShell>
 			{:else}
@@ -43,7 +45,7 @@
 		</mod.ClerkProvider>
 	{/await}
 {:else if useShell && data.user}
-	<AppShell user={data.user} pathname={$page.url.pathname}>
+	<AppShell user={data.user} pathname={$page.url.pathname} authMode={data.authMode}>
 		{@render children()}
 	</AppShell>
 {:else}

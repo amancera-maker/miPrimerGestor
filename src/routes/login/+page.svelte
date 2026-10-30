@@ -2,15 +2,22 @@
 	import { page } from '$app/stores';
 	import PostLoginRedirect from '$lib/components/PostLoginRedirect.svelte';
 
-	/** @type {{ data: { authMode: string, user: { email: string | null } | null } }} */
+	/** @type {{ data: { authMode: string, user: { email: string | null } | null, signedOut?: boolean, unauthorized?: boolean } }} */
 	let { data } = $props();
 
+	const unauthorized = $derived(
+		data.unauthorized || $page.url.searchParams.get('error') === 'unauthorized'
+	);
+	const signedOut = $derived(
+		data.signedOut || $page.url.searchParams.get('signedOut') === '1'
+	);
+
 	$effect(() => {
+		// Tras cerrar sesión, no rebotar al dashboard aunque quede cache breve
+		if (signedOut) return;
 		if (!data.user) return;
 		window.location.assign('/dashboard');
 	});
-
-	const unauthorized = $derived($page.url.searchParams.get('error') === 'unauthorized');
 </script>
 
 <div class="login-root">
@@ -38,9 +45,15 @@
 				{#if data.authMode === 'bypass'}
 					Modo demo: acceso directo al panel (sin Google / sin dominio Clerk).
 				{:else}
-					Usa la cuenta de Google autorizada para este despliegue.
+					Entra con Google o crea una cuenta nueva. Solo correos autorizados pueden usar el panel.
 				{/if}
 			</p>
+
+			{#if signedOut}
+				<p class="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
+					Sesión cerrada. Puedes entrar con otra cuenta o crear un usuario nuevo.
+				</p>
+			{/if}
 
 			{#if data.authMode === 'bypass'}
 				<a class="btn-primary mt-8 w-full" href="/dashboard">Entrar al panel</a>
@@ -56,10 +69,23 @@
 									Tu cuenta de Google no está en la lista autorizada
 									(<code>AUTHORIZED_EMAILS</code>). Cierra sesión e inicia con el correo correcto.
 								</p>
-								<mod.SignOutButton redirectUrl="/login" asChild>
+								<mod.SignOutButton redirectUrl="/login?signedOut=1" asChild>
 									{#snippet children({ signOut })}
 										<button type="button" class="btn-secondary w-full" onclick={signOut}>
 											Cerrar sesión
+										</button>
+									{/snippet}
+								</mod.SignOutButton>
+							{:else if signedOut}
+								<!-- Forzar cierre si aún hay sesión Clerk residual -->
+								<mod.SignOutButton redirectUrl="/login?signedOut=1" asChild>
+									{#snippet children({ signOut })}
+										<button
+											type="button"
+											class="btn-primary w-full"
+											onclick={signOut}
+										>
+											Confirmar cierre de sesión
 										</button>
 									{/snippet}
 								</mod.SignOutButton>
@@ -73,7 +99,6 @@
 									Esa cuenta no está autorizada para este despacho.
 								</p>
 							{/if}
-							<!-- Redirect (no modal): ayuda al handshake de Clerk en dominios públicos -->
 							<mod.SignInButton
 								forceRedirectUrl="/dashboard"
 								fallbackRedirectUrl="/dashboard"
@@ -85,6 +110,23 @@
 									</button>
 								{/snippet}
 							</mod.SignInButton>
+							<mod.SignUpButton
+								forceRedirectUrl="/dashboard"
+								fallbackRedirectUrl="/dashboard"
+								asChild
+							>
+								{#snippet children({ signUp })}
+									<button type="button" class="btn-secondary w-full google-btn" onclick={signUp}>
+										Crear cuenta con Google
+									</button>
+								{/snippet}
+							</mod.SignUpButton>
+							<p class="pt-1 text-center text-sm text-[var(--color-muted)]">
+								También puedes
+								<a class="font-semibold text-[var(--color-brand-800)] hover:underline" href="/registro"
+									>registrarte aquí</a
+								>.
+							</p>
 						</mod.Show>
 					</div>
 				{/await}
@@ -98,7 +140,7 @@
 				</div>
 			{/if}
 
-			<p class="legal">Acceso privado · Un despacho por despliegue</p>
+			<p class="legal">Login Google (Clerk) · Rutas del panel protegidas</p>
 		</div>
 	</main>
 </div>

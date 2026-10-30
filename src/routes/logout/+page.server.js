@@ -1,17 +1,18 @@
 import { redirect } from '@sveltejs/kit';
-import { env } from '$env/dynamic/private';
+
+/**
+ * Fallback server-side. El cierre real de Clerk ocurre en el cliente
+ * (LogoutButton / SignOutButton). Aquí solo redirigimos.
+ */
 
 /** @type {import('./$types').Actions} */
 export const actions = {
 	default: async () => {
-		if (env.DEV_BYPASS_AUTH === 'true') {
-			redirect(303, '/login');
-		}
-		redirect(303, '/login');
+		redirect(303, '/login?signedOut=1');
 	}
 };
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load() {
-	redirect(303, '/login');
+	redirect(303, '/login?signedOut=1');
 }

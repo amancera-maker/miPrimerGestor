@@ -1,6 +1,8 @@
 <script>
-	/** @type {{ user: { fullName: string | null, email: string | null, imageUrl: string | null }, pathname: string, children: import('svelte').Snippet }} */
-	let { user, pathname, children } = $props();
+	import LogoutButton from '$lib/components/LogoutButton.svelte';
+
+	/** @type {{ user: { fullName: string | null, email: string | null, imageUrl: string | null }, pathname: string, authMode?: string, children: import('svelte').Snippet }} */
+	let { user, pathname, authMode = 'clerk', children } = $props();
 
 	let mobileOpen = $state(false);
 
@@ -127,9 +129,7 @@
 						{user.email || ''}
 					</p>
 				</div>
-				<form method="POST" action="/logout" class="shrink-0">
-					<button type="submit" class="btn-secondary px-2.5 py-1.5 text-sm sm:px-3">Salir</button>
-				</form>
+				<LogoutButton {authMode} />
 			</div>
 		</header>
 		<main class="shell-main mx-auto w-full min-w-0 max-w-7xl flex-1 overflow-x-auto px-3 py-5 sm:px-6 sm:py-7">

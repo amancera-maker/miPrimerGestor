@@ -8,7 +8,16 @@ import {
 	validateProductionEnv
 } from '$lib/server/env.js';
 
-const PUBLIC_PATHS = ['/login', '/publico', '/api/health'];
+const PUBLIC_PATHS = [
+	'/login',
+	'/registro',
+	'/sign-in',
+	'/sign-up',
+	'/sso-callback',
+	'/logout',
+	'/publico',
+	'/api/health'
+];
 
 /**
  * @param {string} pathname
