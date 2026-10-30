@@ -52,6 +52,19 @@
 	});
 
 	const toastGate = createFormToastGate();
+	let flashSeen = $state(/** @type {string | null} */ (null));
+
+	$effect(() => {
+		const flash = data.flash;
+		if (!flash || flash === flashSeen) return;
+		flashSeen = flash;
+		pushToast('success', flash);
+		const url = new URL($page.url);
+		if (url.searchParams.has('msg')) {
+			url.searchParams.delete('msg');
+			goto(`${url.pathname}${url.search}`, { replaceState: true, noScroll: true });
+		}
+	});
 
 	$effect(() => {
 		if (form?.values) {
@@ -237,6 +250,23 @@
 												<input type="hidden" name="id" value={c.id} />
 												<button type="submit" class="btn-ghost px-2 py-1 text-xs text-emerald-800"
 													>Reactivar</button
+												>
+											</form>
+										{/if}
+										{#if c.puedeEliminar}
+											<form method="POST" action="?/eliminar" use:enhance>
+												<input type="hidden" name="id" value={c.id} />
+												<button
+													type="submit"
+													class="btn-ghost px-2 py-1 text-xs text-[var(--color-danger)]"
+													onclick={(e) => {
+														if (
+															!confirm(
+																`¿Eliminar a ${c.nombre}? Esta acción no se puede deshacer.`
+															)
+														)
+															e.preventDefault();
+													}}>Eliminar</button
 												>
 											</form>
 										{/if}

@@ -47,6 +47,16 @@
 		}
 	}
 
+	function onEliminarSubmit(/** @type {SubmitEvent} */ e) {
+		if (
+			!confirm(
+				`¿Eliminar a ${c.nombre}? Solo se permite si no le has cotizado/vendido. Esta acción no se puede deshacer.`
+			)
+		) {
+			e.preventDefault();
+		}
+	}
+
 	const c = $derived(data.cliente);
 	const fieldErrors = $derived(form?.errors ?? form?.fieldErrors ?? {});
 </script>
@@ -71,6 +81,15 @@
 				<form method="POST" action="?/reactivar" use:enhance>
 					<button class="btn-primary" type="submit">Reactivar</button>
 				</form>
+			{/if}
+			{#if c.puedeEliminar}
+				<form method="POST" action="?/eliminar" onsubmit={onEliminarSubmit} use:enhance>
+					<button class="btn-danger" type="submit">Eliminar cliente</button>
+				</form>
+			{:else}
+				<p class="self-center text-xs text-[var(--color-muted)]">
+					No se puede eliminar: ya tiene cotizaciones.
+				</p>
 			{/if}
 		</div>
 	</div>

@@ -1,7 +1,12 @@
 import { fail } from '@sveltejs/kit';
 import { requireUser, requireUserAction } from '$lib/server/auth.js';
 import { prisma } from '$lib/server/prisma.js';
-import { crearCliente, actualizarCliente, setClienteActivo } from '$lib/server/clientes.js';
+import {
+	crearCliente,
+	actualizarCliente,
+	setClienteActivo,
+	eliminarCliente
+} from '$lib/server/clientes.js';
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load({ locals, depends, url }) {
@@ -11,10 +16,18 @@ export async function load({ locals, depends, url }) {
 	const mostrarInactivos = url.searchParams.get('inactivos') === '1';
 	const clientes = await prisma.cliente.findMany({
 		where: mostrarInactivos ? undefined : { activo: true },
-		orderBy: [{ activo: 'desc' }, { creadoEn: 'desc' }]
+		orderBy: [{ activo: 'desc' }, { creadoEn: 'desc' }],
+		include: { _count: { select: { cotizaciones: true } } }
 	});
 
-	return { clientes, mostrarInactivos };
+	return {
+		clientes: clientes.map((c) => ({
+			...c,
+			puedeEliminar: c._count.cotizaciones === 0
+		})),
+		mostrarInactivos,
+		flash: url.searchParams.get('msg') || null
+	};
 }
 
 /**
@@ -104,12 +117,30 @@ async function actionReactivar({ request, locals }) {
 	return { success: true, flash: 'Cliente reactivado' };
 }
 
+/**
+ * @param {import('@sveltejs/kit').RequestEvent} event
+ */
+async function actionEliminar({ request, locals }) {
+	const auth = await requireUserAction(locals);
+	if (!auth.ok) return fail(auth.status, { message: auth.message });
+
+	const fd = await request.formData();
+	const id = String(fd.get('id') || '');
+	if (!id) return fail(400, { message: 'Cliente no indicado' });
+
+	const result = await eliminarCliente(id);
+	if (!result.ok) return fail(400, { message: result.message });
+	return { success: true, flash: 'Cliente eliminado' };
+}
+
 /** @type {import('./$types').Actions} */
 export const actions = {
 	crear: actionCrear,
 	editar: actionEditar,
 	desactivar: actionDesactivar,
 	reactivar: actionReactivar,
+	eliminar: actionEliminar,
 	create: actionCrear,
-	deactivate: actionDesactivar
+	deactivate: actionDesactivar,
+	delete: actionEliminar
 };

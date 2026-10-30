@@ -1,7 +1,7 @@
-import { error, fail } from '@sveltejs/kit';
+import { error, fail, redirect } from '@sveltejs/kit';
 import { requireUser, requireUserAction } from '$lib/server/auth.js';
 import { prisma } from '$lib/server/prisma.js';
-import { actualizarCliente, setClienteActivo } from '$lib/server/clientes.js';
+import { actualizarCliente, setClienteActivo, eliminarCliente } from '$lib/server/clientes.js';
 import { totalesCliente } from '$lib/server/finance.js';
 import { serializeCotizacion } from '$lib/server/serialize.js';
 
@@ -25,6 +25,7 @@ export async function load({ locals, params, depends }) {
 	return {
 		cliente: {
 			...cliente,
+			puedeEliminar: cliente.cotizaciones.length === 0,
 			cotizaciones: cliente.cotizaciones.map((c) => {
 				const s = serializeCotizacion(c);
 				return { ...s, totalFmt: s.total };
@@ -86,12 +87,26 @@ async function actionReactivar({ locals, params }) {
 	return { success: true, flash: 'Cliente reactivado' };
 }
 
+/**
+ * @param {import('@sveltejs/kit').RequestEvent} event
+ */
+async function actionEliminar({ locals, params }) {
+	const auth = await requireUserAction(locals);
+	if (!auth.ok) return fail(auth.status, { message: auth.message });
+
+	const result = await eliminarCliente(params.id);
+	if (!result.ok) return fail(400, { message: result.message });
+	redirect(303, '/clientes?msg=Cliente+eliminado');
+}
+
 /** @type {import('./$types').Actions} */
 export const actions = {
 	editar: actionEditar,
 	desactivar: actionDesactivar,
 	reactivar: actionReactivar,
+	eliminar: actionEliminar,
 	update: actionEditar,
 	deactivate: actionDesactivar,
-	reactivate: actionReactivar
+	reactivate: actionReactivar,
+	delete: actionEliminar
 };

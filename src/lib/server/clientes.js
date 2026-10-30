@@ -310,6 +310,43 @@ export async function setClienteActivo(id, activo) {
 }
 
 /**
+ * Elimina un cliente solo si no tiene cotizaciones (aún no se le ha vendido/cotizado).
+ * @param {string} id
+ * @returns {Promise<{ ok: true } | { ok: false, message: string }>}
+ */
+export async function eliminarCliente(id) {
+	const actual = await prisma.cliente.findUnique({
+		where: { id },
+		include: { _count: { select: { cotizaciones: true } } }
+	});
+	if (!actual) {
+		return { ok: false, message: 'Cliente no encontrado.' };
+	}
+	if (actual._count.cotizaciones > 0) {
+		return {
+			ok: false,
+			message:
+				'No se puede eliminar: a este cliente ya le cotizaste o vendiste. Solo se borran clientes sin cotizaciones.'
+		};
+	}
+
+	try {
+		await prisma.cliente.delete({ where: { id } });
+		return { ok: true };
+	} catch (e) {
+		if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2003') {
+			return {
+				ok: false,
+				message:
+					'No se puede eliminar: a este cliente ya le cotizaste o vendiste. Solo se borran clientes sin cotizaciones.'
+			};
+		}
+		logError('eliminarCliente', e);
+		return { ok: false, message: 'No se pudo eliminar el cliente. Intenta de nuevo.' };
+	}
+}
+
+/**
  * Combobox de clientes activos
  * @param {string} q
  * @param {number} [page]
