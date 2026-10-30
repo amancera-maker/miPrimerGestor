@@ -21,6 +21,20 @@
 		<a class="btn-primary w-full" href="/dashboard">Entrar al panel (modo demo)</a>
 	{:else if data.authMode === 'clerk'}
 		{#await import('svelte-clerk') then mod}
+			<div class="mb-4 flex flex-col gap-3">
+				<mod.SignUpButton
+					mode="modal"
+					forceRedirectUrl="/dashboard"
+					fallbackRedirectUrl="/dashboard"
+					asChild
+				>
+					{#snippet children({ signUp })}
+						<button type="button" class="btn-primary w-full" onclick={signUp}>
+							Crear cuenta con Google
+						</button>
+					{/snippet}
+				</mod.SignUpButton>
+			</div>
 			<div class="card-panel overflow-hidden p-2 sm:p-4">
 				<mod.SignUp
 					routing="path"

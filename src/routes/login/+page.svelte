@@ -1,6 +1,7 @@
 <script>
 	import { page } from '$app/stores';
 	import PostLoginRedirect from '$lib/components/PostLoginRedirect.svelte';
+	import GoogleAuthButtons from '$lib/components/GoogleAuthButtons.svelte';
 
 	/** @type {{ data: { authMode: string, user: { email: string | null } | null, signedOut?: boolean, unauthorized?: boolean } }} */
 	let { data } = $props();
@@ -99,34 +100,22 @@
 									Esa cuenta no está autorizada para este despacho.
 								</p>
 							{/if}
-							<mod.SignInButton
-								forceRedirectUrl="/dashboard"
-								fallbackRedirectUrl="/dashboard"
-								asChild
-							>
-								{#snippet children({ signIn })}
-									<button type="button" class="btn-primary w-full google-btn" onclick={signIn}>
-										Continuar con Google
-									</button>
-								{/snippet}
-							</mod.SignInButton>
-							<mod.SignUpButton
-								forceRedirectUrl="/dashboard"
-								fallbackRedirectUrl="/dashboard"
-								asChild
-							>
-								{#snippet children({ signUp })}
-									<button type="button" class="btn-secondary w-full google-btn" onclick={signUp}>
-										Crear cuenta con Google
-									</button>
-								{/snippet}
-							</mod.SignUpButton>
-							<p class="pt-1 text-center text-sm text-[var(--color-muted)]">
-								También puedes
-								<a class="font-semibold text-[var(--color-brand-800)] hover:underline" href="/registro"
-									>registrarte aquí</a
-								>.
-							</p>
+							<!-- OAuth directo a Google (SignInButton sin modal solo redirigía a /login) -->
+							<GoogleAuthButtons signedOutHint={signedOut} />
+							<details class="mt-2 rounded-xl border border-[var(--color-border)] bg-white p-2">
+								<summary class="cursor-pointer px-2 py-1 text-sm text-[var(--color-muted)]">
+									Otras opciones de acceso
+								</summary>
+								<div class="overflow-hidden p-1">
+									<mod.SignIn
+										routing="path"
+										path="/login"
+										signUpUrl="/registro"
+										forceRedirectUrl="/dashboard"
+										fallbackRedirectUrl="/dashboard"
+									/>
+								</div>
+							</details>
 						</mod.Show>
 					</div>
 				{/await}
@@ -297,10 +286,6 @@
 		font-size: 0.95rem;
 		line-height: 1.5;
 		color: var(--color-muted);
-	}
-
-	.google-btn {
-		gap: 0.65rem;
 	}
 
 	.legal {
