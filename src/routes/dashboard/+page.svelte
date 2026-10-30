@@ -159,7 +159,7 @@
 			</div>
 			<div class="kpi-card kpi-card--pendiente min-w-0">
 				<div class="flex items-start justify-between gap-2">
-					<p class="kpi-label">Pendiente de aprobar</p>
+					<p class="kpi-label">Pendiente de pagar</p>
 					<span class="kpi-icon" aria-hidden="true">
 						<svg width="16" height="16" viewBox="0 0 24 24" fill="none"
 							><circle cx="12" cy="12" r="8.25" stroke="currentColor" stroke-width="1.8" /><path
@@ -171,8 +171,8 @@
 						>
 					</span>
 				</div>
-				<p class="kpi-value text-[var(--color-danger)]">{formatMXN(data.pendienteAprobar)}</p>
-				<p class="kpi-hint">Monto en borrador o enviadas (aún no aprobadas)</p>
+				<p class="kpi-value text-[var(--color-danger)]">{formatMXN(data.pendientePagar)}</p>
+				<p class="kpi-hint">Cotizaciones APROBADAS con saldo pendiente</p>
 			</div>
 			<div class="kpi-card kpi-card--activas min-w-0">
 				<div class="flex items-start justify-between gap-2">
